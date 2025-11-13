@@ -1,11 +1,60 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import AddOptionsPage from './pages/AddOptionsPage';
+import DeleteOptionsPage from './pages/DeleteOptionsPage';
+import AddUserOrHotelPage from './pages/AddUserOrHotelPage';
+import DeleteUserPage from './pages/DeleteUserPage';
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Restaurant Management</h1>
-        <p className="text-gray-600">Welcome to your restaurant management app!</p>
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/superadmin-dashboard"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin-add-options"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <AddOptionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin-delete-options"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <DeleteOptionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/add-user-or-hotel"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <AddUserOrHotelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/delete-user"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <DeleteUserPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<LoginPage />} />
+      </Routes>
+    </Router>
   );
 }
 
