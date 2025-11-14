@@ -1,0 +1,429 @@
+const ProcurementBill = require('../models/ProcurementBill');
+const PaymentEntry = require('../models/PaymentEntry');
+const getLeakageData = require('../services/leakageService');
+const StockIssue = require('../models/StockIssue');
+const HotelConsumption = require('../models/HotelConsumption');
+const SalesEntry = require('../models/SalesEntry');
+const ExpectedConsumption = require('../models/ExpectedConsumption');
+const Hotel = require('../models/Hotel');
+const Item = require('../models/Item');
+const mongoose = require('mongoose');
+
+// GET /md-dashboard/summary
+const getSummary = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Total procurement this month
+    const procurementResult = await ProcurementBill.aggregate([
+      { $match: { billDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$finalAmount' } } }
+    ]);
+    const totalProcurementThisMonth = procurementResult.length > 0 ? procurementResult[0].total : 0;
+
+    // Total payments this month
+    const paymentsResult = await PaymentEntry.aggregate([
+      { $match: { paymentDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+    ]);
+    const totalPaymentsThisMonth = paymentsResult.length > 0 ? paymentsResult[0].total : 0;
+
+    // Total pending amount (all bills - all payments)
+    const allBillsResult = await ProcurementBill.aggregate([
+      { $group: { _id: null, total: { $sum: '$finalAmount' } } }
+    ]);
+    const allPaymentsResult = await PaymentEntry.aggregate([
+      { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+    ]);
+    const totalBills = allBillsResult.length > 0 ? allBillsResult[0].total : 0;
+    const totalPayments = allPaymentsResult.length > 0 ? allPaymentsResult[0].total : 0;
+    const totalPendingAmount = totalBills - totalPayments;
+
+    // Total leakage (issued - consumed)
+    const issuedResult = await StockIssue.aggregate([
+      { $match: { dateIssued: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $unwind: '$items' },
+      { $group: { _id: null, total: { $sum: '$items.quantityIssued' } } }
+    ]);
+    const consumedResult = await HotelConsumption.aggregate([
+      { $match: { date: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $unwind: '$items' },
+      { $group: { _id: null, total: { $sum: '$items.quantityConsumed' } } }
+    ]);
+    const totalIssued = issuedResult.length > 0 ? issuedResult[0].total : 0;
+    const totalConsumed = consumedResult.length > 0 ? consumedResult[0].total : 0;
+    const totalLeakage = totalIssued - totalConsumed;
+
+    // Total wastage percentage (actual - expected) / expected * 100
+    const expectedResult = await ExpectedConsumption.aggregate([
+      { $match: { date: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $unwind: '$items' },
+      { $group: { _id: null, total: { $sum: '$items.expectedQuantity' } } }
+    ]);
+    const totalExpected = expectedResult.length > 0 ? expectedResult[0].total : 0;
+    const wastage = totalConsumed - totalExpected;
+    const totalWastagePercentage = totalExpected > 0 ? ((wastage / totalExpected) * 100).toFixed(2) : 0;
+
+    // Total sales this month
+    const salesResult = await SalesEntry.aggregate([
+      { $match: { date: { $gte: startOfMonth, $lte: endOfMonth } } },
+      { $group: { _id: null, total: { $sum: '$totalSalesAmount' } } }
+    ]);
+    const totalSalesThisMonth = salesResult.length > 0 ? salesResult[0].total : 0;
+
+    res.json({
+      totalProcurementThisMonth,
+      totalPaymentsThisMonth,
+      totalPendingAmount,
+      totalLeakage,
+      totalWastagePercentage: parseFloat(totalWastagePercentage),
+      totalSalesThisMonth
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching summary', error: error.message });
+  }
+};
+
+// GET /md-dashboard/leakage-chart?from=&to=
+const getLeakageChart = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
+
+    const results = await Promise.all([
+      StockIssue.aggregate([
+        ...(from && to ? [{ $match: { dateIssued: dateMatch } }] : []),
+        { $unwind: '$items' },
+        { $group: { _id: '$items.itemId', totalIssued: { $sum: '$items.quantityIssued' } } }
+      ]),
+      HotelConsumption.aggregate([
+        ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+        { $unwind: '$items' },
+        { $group: { _id: '$items.itemId', totalConsumed: { $sum: '$items.quantityConsumed' } } }
+      ])
+    ]);
+
+    const issuedByItem = results[0];
+    const consumedByItem = results[1];
+
+    const itemLeakage = [];
+    const allItemIds = new Set([
+      ...issuedByItem.map(r => r._id.toString()),
+      ...consumedByItem.map(r => r._id.toString())
+    ]);
+
+    for (const itemId of allItemIds) {
+      const issued = issuedByItem.find(r => r._id.toString() === itemId)?.totalIssued || 0;
+      const consumed = consumedByItem.find(r => r._id.toString() === itemId)?.totalConsumed || 0;
+      const leakage = issued - consumed;
+      itemLeakage.push({ itemId, expected: issued, actual: consumed, leakage });
+    }
+
+    const populatedResults = await Promise.all(
+      itemLeakage.map(async (item) => {
+        const itemDoc = await Item.findById(item.itemId).select('name');
+        return { ...item, itemName: itemDoc?.name || 'Unknown Item' };
+      })
+    );
+
+    res.json(populatedResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching leakage chart', error: error.message });
+  }
+};
+
+// GET /md-dashboard/hotel-leakage?from=&to=
+const getHotelLeakage = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
+
+    const results = await Promise.all([
+      StockIssue.aggregate([
+        ...(from && to ? [{ $match: { dateIssued: dateMatch } }] : []),
+        { $unwind: '$items' },
+        { $group: { _id: '$hotelId', totalIssued: { $sum: '$items.quantityIssued' } } }
+      ]),
+      HotelConsumption.aggregate([
+        ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+        { $unwind: '$items' },
+        { $group: { _id: '$hotelId', totalConsumed: { $sum: '$items.quantityConsumed' } } }
+      ])
+    ]);
+
+    const issuedByHotel = results[0];
+    const consumedByHotel = results[1];
+
+    const hotelLeakage = [];
+    const allHotelIds = new Set([
+      ...issuedByHotel.map(r => r._id.toString()),
+      ...consumedByHotel.map(r => r._id.toString())
+    ]);
+
+    for (const hotelId of allHotelIds) {
+      const issued = issuedByHotel.find(r => r._id.toString() === hotelId)?.totalIssued || 0;
+      const consumed = consumedByHotel.find(r => r._id.toString() === hotelId)?.totalConsumed || 0;
+      const leakage = issued - consumed;
+      hotelLeakage.push({ hotelId, expected: issued, actual: consumed, leakage });
+    }
+
+    const populatedResults = await Promise.all(
+      hotelLeakage.map(async (item) => {
+        const hotel = await Hotel.findById(item.hotelId).select('name');
+        return { ...item, hotelName: hotel?.name || 'Unknown Hotel' };
+      })
+    );
+
+    res.json(populatedResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching hotel leakage', error: error.message });
+  }
+};
+
+// GET /md-dashboard/procurement-vs-payments?year=
+const getProcurementVsPayments = async (req, res) => {
+  try {
+    const { year } = req.query;
+    const yearInt = parseInt(year) || new Date().getFullYear();
+
+    const monthlyData = [];
+
+    for (let month = 0; month < 12; month++) {
+      const startOfMonth = new Date(yearInt, month, 1);
+      const endOfMonth = new Date(yearInt, month + 1, 0);
+
+      const procurementResult = await ProcurementBill.aggregate([
+        { $match: { billDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$finalAmount' } } }
+      ]);
+
+      const paymentsResult = await PaymentEntry.aggregate([
+        { $match: { paymentDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+      ]);
+
+      const procurement = procurementResult.length > 0 ? procurementResult[0].total : 0;
+      const payments = paymentsResult.length > 0 ? paymentsResult[0].total : 0;
+
+      monthlyData.push({
+        month: startOfMonth.toLocaleString('default', { month: 'short' }),
+        procurement,
+        payments
+      });
+    }
+
+    res.json(monthlyData);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching procurement vs payments', error: error.message });
+  }
+};
+
+// GET /md-dashboard/item-consumption-trend?itemId=&range=
+const getItemConsumptionTrend = async (req, res) => {
+  try {
+    const { itemId, range } = req.query;
+    if (!itemId) return res.status(400).json({ message: 'itemId is required' });
+
+    const now = new Date();
+    let startDate;
+    if (range === 'monthly') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    } else {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    const consumptionData = await HotelConsumption.aggregate([
+      { $match: { date: { $gte: startDate } } },
+      { $unwind: '$items' },
+      { $match: { 'items.itemId': mongoose.Types.ObjectId(itemId) } },
+      {
+        $group: {
+          _id: range === 'monthly' ? { $dateToString: { format: '%Y-%m', date: '$date' } } : { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+          totalConsumed: { $sum: '$items.quantityConsumed' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
+
+    const trend = consumptionData.map(item => ({
+      date: item._id,
+      consumption: item.totalConsumed
+    }));
+
+    res.json(trend);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching item consumption trend', error: error.message });
+  }
+};
+
+// GET /md-dashboard/expected-vs-actual-top-items?from=&to=
+const getExpectedVsActualTopItems = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
+
+    const expectedResults = await ExpectedConsumption.aggregate([
+      ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+      { $unwind: '$items' },
+      { $group: { _id: '$items.itemId', totalExpected: { $sum: '$items.expectedQuantity' } } }
+    ]);
+
+    const actualResults = await HotelConsumption.aggregate([
+      ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+      { $unwind: '$items' },
+      { $group: { _id: '$items.itemId', totalActual: { $sum: '$items.quantityConsumed' } } }
+    ]);
+
+    const itemMap = new Map();
+    expectedResults.forEach(item => {
+      itemMap.set(item._id.toString(), { itemId: item._id, expected: item.totalExpected, actual: 0 });
+    });
+    actualResults.forEach(item => {
+      const key = item._id.toString();
+      if (itemMap.has(key)) {
+        itemMap.get(key).actual = item.totalActual;
+      } else {
+        itemMap.set(key, { itemId: item._id, expected: 0, actual: item.totalActual });
+      }
+    });
+
+    const items = Array.from(itemMap.values())
+      .map(item => ({ ...item, leakage: item.actual - item.expected }))
+      .sort((a, b) => Math.abs(b.leakage) - Math.abs(a.leakage))
+      .slice(0, 5);
+
+    const populatedResults = await Promise.all(
+      items.map(async (item) => {
+        const itemDoc = await Item.findById(item.itemId).select('name');
+        return { ...item, itemName: itemDoc?.name || 'Unknown Item' };
+      })
+    );
+
+    res.json(populatedResults);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching expected vs actual top items', error: error.message });
+  }
+};
+
+// GET /md-dashboard/vendor-performance?from=&to=
+const getVendorPerformance = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
+
+    const bills = await ProcurementBill.aggregate([
+      ...(from && to ? [{ $match: { billDate: dateMatch } }] : []),
+      { $group: { _id: '$vendorName', totalProcured: { $sum: '$finalAmount' } } }
+    ]);
+
+    const payments = await PaymentEntry.aggregate([
+      ...(from && to ? [{ $match: { paymentDate: dateMatch } }] : []),
+      { $group: { _id: '$vendorName', totalPaid: { $sum: '$amountPaid' } } }
+    ]);
+
+    const vendorMap = new Map();
+    bills.forEach(bill => {
+      vendorMap.set(bill._id, { vendorName: bill._id, totalProcured: bill.totalProcured, totalPaid: 0 });
+    });
+    payments.forEach(payment => {
+      const key = payment._id;
+      if (vendorMap.has(key)) {
+        vendorMap.get(key).totalPaid = payment.totalPaid;
+      } else {
+        vendorMap.set(key, { vendorName: key, totalProcured: 0, totalPaid: payment.totalPaid });
+      }
+    });
+
+    const vendorPerformance = Array.from(vendorMap.values()).map(vendor => ({
+      ...vendor,
+      pendingAmount: vendor.totalProcured - vendor.totalPaid
+    }));
+
+    res.json(vendorPerformance);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching vendor performance', error: error.message });
+  }
+};
+
+// GET /md-dashboard/insights?from=&to=
+const getInsights = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
+
+    const insights = [];
+
+    // Insight 1: High leakage items
+    const leakageItems = await getLeakageData(from, to);
+
+    const highLeakage = leakageItems.filter(item => item.leakage > 10).slice(0, 3);
+    if (highLeakage.length > 0) {
+      insights.push(`High leakage detected in items: ${highLeakage.map(i => i.itemName).join(', ')}. Consider reviewing inventory management.`);
+    }
+
+    // Insight 2: Pending payments
+    const pendingResult = await PaymentEntry.aggregate([
+      { $group: { _id: null, totalPaid: { $sum: '$amountPaid' } } }
+    ]);
+    const totalPaid = pendingResult.length > 0 ? pendingResult[0].totalPaid : 0;
+    const totalBillsResult = await ProcurementBill.aggregate([
+      { $group: { _id: null, total: { $sum: '$finalAmount' } } }
+    ]);
+    const totalBills = totalBillsResult.length > 0 ? totalBillsResult[0].total : 0;
+    const pending = totalBills - totalPaid;
+    if (pending > 10000) {
+      insights.push(`High pending payments amounting to ₹${pending}. Review payment schedules.`);
+    }
+
+    // Insight 3: Low sales vs consumption
+    const salesResult = await SalesEntry.aggregate([
+      ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+      { $group: { _id: null, total: { $sum: '$totalSalesAmount' } } }
+    ]);
+    const totalSales = salesResult.length > 0 ? salesResult[0].total : 0;
+    const consumedResult = await HotelConsumption.aggregate([
+      ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+      { $unwind: '$items' },
+      { $group: { _id: null, total: { $sum: '$items.quantityConsumed' } } }
+    ]);
+    const totalConsumed = consumedResult.length > 0 ? consumedResult[0].total : 0;
+    if (totalConsumed > totalSales * 1.5) {
+      insights.push(`Consumption significantly higher than sales. Possible wastage or unrecorded sales.`);
+    }
+
+    // Insight 4: Top performing hotels
+    const hotelSales = await SalesEntry.aggregate([
+      ...(from && to ? [{ $match: { date: dateMatch } }] : []),
+      { $group: { _id: '$hotelId', totalSales: { $sum: '$totalSalesAmount' } } },
+      { $sort: { totalSales: -1 } },
+      { $limit: 3 }
+    ]);
+    if (hotelSales.length > 0) {
+      const topHotels = await Promise.all(
+        hotelSales.map(async (h) => {
+          const hotel = await Hotel.findById(h._id).select('name');
+          return hotel?.name || 'Unknown';
+        })
+      );
+      insights.push(`Top performing hotels: ${topHotels.join(', ')}.`);
+    }
+
+    res.json(insights);
+  } catch (error) {
+    console.error('Error in getInsights:', error); // Log the error
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+};
+
+module.exports = {
+  getSummary,
+  getLeakageChart,
+  getHotelLeakage,
+  getProcurementVsPayments,
+  getItemConsumptionTrend,
+  getExpectedVsActualTopItems,
+  getVendorPerformance,
+  getInsights
+};

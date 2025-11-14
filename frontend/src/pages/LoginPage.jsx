@@ -14,7 +14,31 @@ const LoginPage = () => {
       const response = await axiosInstance.post('/auth/login', { email, password });
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/superadmin-dashboard');
+
+      // Redirect based on user role
+      const userRole = response.data.user.role;
+      switch (userRole) {
+        case 'superadmin':
+          navigate('/superadmin-dashboard');
+          break;
+        case 'procurement_officer':
+          navigate('/procurement-dashboard');
+          break;
+        case 'store_manager':
+          navigate('/store-dashboard');
+          break;
+        case 'hotel_manager':
+          navigate('/hotel-dashboard');
+          break;
+        case 'accounts':
+          navigate('/accounts-dashboard');
+          break;
+        case 'md':
+          navigate('/md-reports-dashboard');
+          break;
+        default:
+          navigate('/superadmin-dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }

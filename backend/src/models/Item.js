@@ -9,9 +9,9 @@ const vendorSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  gstApplicable: {
-    type: Boolean,
-    required: true
+  lastProcuredAt: {
+    type: Date,
+    default: null
   }
 });
 
@@ -20,22 +20,22 @@ const itemSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  unit: {
-    type: String,
-    required: true
-  },
   category: {
     type: String,
     required: true
   },
-  itemDefaultGST: {
-    type: Number,
+  unit: {
+    type: String,
     required: true
   },
+  gstApplicable: {
+    type: Boolean,
+    default: false
+  },
   vendors: [vendorSchema],
-  lastProcuredAmount: {
-    type: Number,
-    required: true
+  isActive: {
+    type: Boolean,
+    default: true
   }
 });
 

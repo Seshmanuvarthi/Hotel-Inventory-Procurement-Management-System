@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3001', // Adjust if backend is on different port
+  baseURL: 'http://localhost:5050', // Adjust if backend is on different port
 });
 
 // Request interceptor to add token

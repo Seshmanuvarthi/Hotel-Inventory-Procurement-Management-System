@@ -4,7 +4,7 @@ import axiosInstance from '../utils/axiosInstance';
 
 const AddUserOrHotelPage = () => {
   const [searchParams] = useSearchParams();
-  const type = searchParams.get('type');
+  const type = searchParams.get('type') || '';
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -166,7 +166,7 @@ const AddUserOrHotelPage = () => {
             <label className="block text-gray-700 mb-2">Role</label>
             <input
               type="text"
-              value={type.replace('_', ' ').toUpperCase()}
+              value={(type || '').replace('_', ' ').toUpperCase()}
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               readOnly
             />
