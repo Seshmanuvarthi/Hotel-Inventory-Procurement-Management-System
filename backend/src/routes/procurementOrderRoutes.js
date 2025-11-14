@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const {
   createProcurementOrder,
-  getAllOrders,
-  getOrderById,
+  getAllProcurementOrders,
+  getProcurementOrderById,
   mdApproveOrder,
   mdRejectOrder,
-  markOrderAsPaid
-} = require('../controllers/procurementController');
+  markAsPaid
+} = require('../controllers/procurementOrderController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
@@ -15,10 +15,10 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 router.post('/', authMiddleware, roleMiddleware(['procurement_officer', 'superadmin']), createProcurementOrder);
 
 // Get all procurement orders - procurement_officer, md, accounts, superadmin
-router.get('/', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getAllOrders);
+router.get('/', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getAllProcurementOrders);
 
 // Get procurement order by ID - procurement_officer, md, accounts, superadmin
-router.get('/:id', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getOrderById);
+router.get('/:id', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getProcurementOrderById);
 
 // MD approve order - md, superadmin
 router.patch('/:id/approve', authMiddleware, roleMiddleware(['md', 'superadmin']), mdApproveOrder);
@@ -26,7 +26,7 @@ router.patch('/:id/approve', authMiddleware, roleMiddleware(['md', 'superadmin']
 // MD reject order - md, superadmin
 router.patch('/:id/reject', authMiddleware, roleMiddleware(['md', 'superadmin']), mdRejectOrder);
 
-// Mark order as paid - accounts, superadmin
-router.patch('/:id/pay', authMiddleware, roleMiddleware(['accounts', 'superadmin']), markOrderAsPaid);
+// Mark as paid - accounts, superadmin
+router.patch('/:id/pay', authMiddleware, roleMiddleware(['accounts', 'superadmin']), markAsPaid);
 
 module.exports = router;

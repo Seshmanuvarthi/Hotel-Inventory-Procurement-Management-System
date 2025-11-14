@@ -24,8 +24,8 @@ const MDApprovalDashboard = () => {
 
   const fetchPendingRequests = async () => {
     try {
-      const response = await axiosInstance.get('/procurement');
-      const pendingRequests = response.data.filter(req => req.status === 'pending');
+      const response = await axiosInstance.get('/procurement-orders');
+      const pendingRequests = response.data.filter(req => req.status === 'pending_md_approval');
       setRequests(pendingRequests);
     } catch (error) {
       setMessage('Error fetching pending requests');
@@ -45,7 +45,7 @@ const MDApprovalDashboard = () => {
   const handleApprove = async (requestId) => {
     setActionLoading(true);
     try {
-      await axiosInstance.patch(`/procurement/${requestId}/approve`, { remarks });
+      await axiosInstance.patch(`/procurement-orders/${requestId}/approve`, { remarks });
       setMessage('Request approved successfully!');
       setSelectedRequest(null);
       setRemarks('');
@@ -60,7 +60,7 @@ const MDApprovalDashboard = () => {
   const handleReject = async (requestId) => {
     setActionLoading(true);
     try {
-      await axiosInstance.patch(`/procurement/${requestId}/reject`, { remarks });
+      await axiosInstance.patch(`/procurement-orders/${requestId}/reject`, { remarks });
       setMessage('Request rejected successfully!');
       setSelectedRequest(null);
       setRemarks('');

@@ -4,16 +4,21 @@ const SalesEntry = require('../models/SalesEntry');
 const ExpectedConsumption = require('../models/ExpectedConsumption');
 const Hotel = require('../models/Hotel');
 const Item = require('../models/Item');
+const { toBaseUnit } = require('../utils/unitConverter');
 
 // GET /reports/issued-vs-consumed
 const getIssuedVsConsumed = async (req, res) => {
   try {
     const { hotelId, itemId, from, to } = req.query;
+    const mongoose = require('mongoose');
 
     let matchConditions = {};
 
     if (hotelId) {
-      matchConditions.hotelId = require('mongoose').Types.ObjectId(hotelId);
+      if (!mongoose.Types.ObjectId.isValid(hotelId)) {
+        return res.status(400).json({ message: 'Invalid hotelId provided' });
+      }
+      matchConditions.hotelId = new mongoose.Types.ObjectId(hotelId);
     }
 
     if (from && to) {
@@ -23,25 +28,26 @@ const getIssuedVsConsumed = async (req, res) => {
       };
     }
 
-    // Get total issued
+    // Get total issued - convert to base units
     const issuedResult = await StockIssue.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
-      ...(itemId ? [{ $match: { 'items.itemId': require('mongoose').Types.ObjectId(itemId) } }] : []),
+      ...(itemId ? [{ $match: { 'items.itemId': new mongoose.Types.ObjectId(itemId) } }] : []),
       {
         $group: {
           _id: null,
-          totalIssued: { $sum: '$items.quantityIssued' }
+          totalIssued: { $sum: '$items.quantityIssued' },
+          unit: { $first: '$items.unit' }
         }
       }
     ]);
 
-    const issued = issuedResult.length > 0 ? issuedResult[0].totalIssued : 0;
+    const issued = issuedResult.length > 0 ? toBaseUnit(issuedResult[0].totalIssued, issuedResult[0].unit) : 0;
 
-    // Get total consumed
+    // Get total consumed - convert to base units
     let consumptionMatch = {};
     if (hotelId) {
-      consumptionMatch.hotelId = require('mongoose').Types.ObjectId(hotelId);
+      consumptionMatch.hotelId = new mongoose.Types.ObjectId(hotelId);
     }
     if (from && to) {
       consumptionMatch.date = {
@@ -53,16 +59,17 @@ const getIssuedVsConsumed = async (req, res) => {
     const consumedResult = await HotelConsumption.aggregate([
       { $match: consumptionMatch },
       { $unwind: '$items' },
-      ...(itemId ? [{ $match: { 'items.itemId': require('mongoose').Types.ObjectId(itemId) } }] : []),
+      ...(itemId ? [{ $match: { 'items.itemId': new mongoose.Types.ObjectId(itemId) } }] : []),
       {
         $group: {
           _id: null,
-          totalConsumed: { $sum: '$items.quantityConsumed' }
+          totalConsumed: { $sum: '$items.quantityConsumed' },
+          unit: { $first: '$items.unit' }
         }
       }
     ]);
 
-    const consumed = consumedResult.length > 0 ? consumedResult[0].totalConsumed : 0;
+    const consumed = consumedResult.length > 0 ? toBaseUnit(consumedResult[0].totalConsumed, consumedResult[0].unit) : 0;
 
     const leakage = issued - consumed;
 
@@ -99,7 +106,7 @@ const getConsumedVsSales = async (req, res) => {
       if (!mongoose.Types.ObjectId.isValid(hotelId)) {
         return res.status(400).json({ message: 'Invalid hotelId provided' });
       }
-      matchConditions.hotelId = mongoose.Types.ObjectId(hotelId);
+      matchConditions.hotelId = new mongoose.Types.ObjectId(hotelId);
     }
 
     // Validate date range if provided
@@ -230,13 +237,13 @@ const getLeakageReport = async (req, res) => {
       // Sort by largest leakage
       hotelLeakage.sort((a, b) => b.leakage - a.leakage);
 
-      // Populate hotel names
+      // Populate hotel names and branches
       const populatedResults = await Promise.all(
         hotelLeakage.map(async (item) => {
-          const hotel = await Hotel.findById(item.hotelId).select('name');
+          const hotel = await Hotel.findById(item.hotelId).select('name branch');
           return {
             ...item,
-            hotelName: hotel?.name || 'Unknown Hotel'
+            hotelName: hotel ? `${hotel.name} - ${hotel.branch}` : 'Unknown Hotel'
           };
         })
       );
@@ -333,7 +340,7 @@ const getExpectedVsActual = async (req, res) => {
 
     let matchConditions = {};
     if (hotelId) {
-      matchConditions.hotelId = require('mongoose').Types.ObjectId(hotelId);
+      matchConditions.hotelId = new mongoose.Types.ObjectId(hotelId);
     }
     if (from && to) {
       matchConditions.date = {
@@ -342,7 +349,7 @@ const getExpectedVsActual = async (req, res) => {
       };
     }
 
-    // Get expected consumption
+    // Get expected consumption (already in base units)
     const expectedResults = await ExpectedConsumption.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
@@ -354,29 +361,43 @@ const getExpectedVsActual = async (req, res) => {
       }
     ]);
 
-    // Get actual consumption
+    // Get actual consumption - convert to base units
     const actualResults = await HotelConsumption.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
       {
         $group: {
           _id: '$items.itemId',
-          totalActual: { $sum: '$items.quantityConsumed' }
+          totalActual: { $sum: '$items.quantityConsumed' },
+          unit: { $first: '$items.unit' }
         }
       }
     ]);
 
-    // Get issued stock
+    // Convert actual consumption to base units
+    const actualResultsConverted = actualResults.map(result => ({
+      ...result,
+      totalActual: toBaseUnit(result.totalActual, result.unit)
+    }));
+
+    // Get issued stock - convert to base units
     const issuedResults = await StockIssue.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
       {
         $group: {
           _id: '$items.itemId',
-          totalIssued: { $sum: '$items.quantityIssued' }
+          totalIssued: { $sum: '$items.quantityIssued' },
+          unit: { $first: '$items.unit' }
         }
       }
     ]);
+
+    // Convert issued stock to base units
+    const issuedResultsConverted = issuedResults.map(result => ({
+      ...result,
+      totalIssued: toBaseUnit(result.totalIssued, result.unit)
+    }));
 
     // Combine results
     const itemMap = new Map();
@@ -392,7 +413,7 @@ const getExpectedVsActual = async (req, res) => {
     });
 
     // Add actual consumption
-    actualResults.forEach(item => {
+    actualResultsConverted.forEach(item => {
       const key = item._id.toString();
       if (itemMap.has(key)) {
         itemMap.get(key).actualConsumed = item.totalActual;
@@ -407,7 +428,7 @@ const getExpectedVsActual = async (req, res) => {
     });
 
     // Add issued stock
-    issuedResults.forEach(item => {
+    issuedResultsConverted.forEach(item => {
       const key = item._id.toString();
       if (itemMap.has(key)) {
         itemMap.get(key).issued = item.totalIssued;
@@ -455,7 +476,7 @@ const getWastageReport = async (req, res) => {
 
     let matchConditions = {};
     if (hotelId) {
-      matchConditions.hotelId = require('mongoose').Types.ObjectId(hotelId);
+      matchConditions.hotelId = new mongoose.Types.ObjectId(hotelId);
     }
     if (from && to) {
       matchConditions.date = {
@@ -468,7 +489,7 @@ const getWastageReport = async (req, res) => {
     const expectedResults = await ExpectedConsumption.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
-      ...(itemId ? [{ $match: { 'items.itemId': require('mongoose').Types.ObjectId(itemId) } }] : []),
+      ...(itemId ? [{ $match: { 'items.itemId': new require('mongoose').Types.ObjectId(itemId) } }] : []),
       {
         $group: {
           _id: '$items.itemId',
@@ -480,7 +501,7 @@ const getWastageReport = async (req, res) => {
     const actualResults = await HotelConsumption.aggregate([
       { $match: matchConditions },
       { $unwind: '$items' },
-      ...(itemId ? [{ $match: { 'items.itemId': require('mongoose').Types.ObjectId(itemId) } }] : []),
+      ...(itemId ? [{ $match: { 'items.itemId': new require('mongoose').Types.ObjectId(itemId) } }] : []),
       {
         $group: {
           _id: '$items.itemId',

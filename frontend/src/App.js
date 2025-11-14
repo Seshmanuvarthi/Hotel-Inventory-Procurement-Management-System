@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import UserListPage from './pages/UserListPage';
 import AddOptionsPage from './pages/AddOptionsPage';
 import DeleteOptionsPage from './pages/DeleteOptionsPage';
 import AddUserOrHotelPage from './pages/AddUserOrHotelPage';
@@ -11,16 +12,16 @@ import EditItemPage from './pages/EditItemPage';
 import DisableItemPage from './pages/DisableItemPage';
 import RecipeDashboard from './pages/RecipeDashboard';
 import AddRecipePage from './pages/AddRecipePage';
+import AddVendorPage from './pages/AddVendorPage';
 import StoreManagerDashboard from './pages/StoreManagerDashboard';
 import IssueStockPage from './pages/IssueStockPage';
 import StoreStockPage from './pages/StoreStockPage';
 import IssueLogPage from './pages/IssueLogPage';
 import ProcurementDashboard from './pages/ProcurementDashboard';
-import CreateProcurementRequest from './pages/CreateProcurementRequest';
-import ProcurementRequestsList from './pages/ProcurementRequestsList';
+import CreateProcurementOrder from './pages/CreateProcurementOrder';
+import ProcurementOrdersList from './pages/ProcurementOrdersList';
+import ProcurementRequestDetail from './pages/ProcurementRequestDetail';
 import MDApprovalDashboard from './pages/MDApprovalDashboard';
-import UploadBillPage from './pages/UploadBillPage';
-import BillsListPage from './pages/BillsListPage';
 import HotelDashboard from './pages/HotelDashboard';
 import ConsumptionEntry from './pages/ConsumptionEntry';
 import SalesEntry from './pages/SalesEntry';
@@ -46,6 +47,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="superadmin">
               <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users-list"
+          element={
+            <ProtectedRoute requiredRole="superadmin">
+              <UserListPage />
             </ProtectedRoute>
           }
         />
@@ -123,6 +132,14 @@ function App() {
           }
         />
         <Route
+          path="/add-vendor"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin', 'procurement_officer']}>
+              <AddVendorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/store-dashboard"
           element={
             <ProtectedRoute allowedRoles={['store_manager', 'superadmin', 'md']}>
@@ -163,21 +180,22 @@ function App() {
           }
         />
         <Route
-          path="/create-procurement-request"
+          path="/create-procurement-order"
           element={
             <ProtectedRoute allowedRoles={['procurement_officer']}>
-              <CreateProcurementRequest />
+              <CreateProcurementOrder />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/procurement-requests"
+          path="/procurement-orders"
           element={
             <ProtectedRoute allowedRoles={['procurement_officer', 'md', 'accounts', 'superadmin']}>
-              <ProcurementRequestsList />
+              <ProcurementOrdersList />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/md-approvals"
           element={
@@ -186,30 +204,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/upload-bill/:id"
-          element={
-            <ProtectedRoute allowedRoles={['accounts', 'superadmin']}>
-              <UploadBillPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/upload-bill"
-          element={
-            <ProtectedRoute allowedRoles={['accounts', 'superadmin','procurement_officer']}>
-              <UploadBillPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/bills"
-          element={
-            <ProtectedRoute allowedRoles={['accounts', 'md', 'procurement_officer']}>
-              <BillsListPage />
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/hotel-dashboard"
           element={
@@ -316,6 +311,14 @@ function App() {
         />
         <Route path="/" element={<LoginPage />} />
         <Route path="/items-list" element={<ItemsListPage />} />
+        <Route
+          path="/procurement-request/:id"
+          element={
+            <ProtectedRoute allowedRoles={['procurement_officer', 'md', 'accounts', 'superadmin']}>
+              <ProcurementRequestDetail />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

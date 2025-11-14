@@ -123,10 +123,18 @@ const ProcurementRequestsList = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => navigate(`/procurement-request/${request._id}`)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-indigo-600 hover:text-indigo-900 mr-4"
                       >
                         View Details
                       </button>
+                      {request.status === 'approved' && (
+                        <button
+                          onClick={() => navigate(`/upload-bill/${request._id}`)}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Upload Bill
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

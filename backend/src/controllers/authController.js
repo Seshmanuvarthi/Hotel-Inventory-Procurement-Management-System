@@ -50,14 +50,18 @@ const login = async (req, res) => {
 
     // Find user
     const user = await User.findOne({ email });
-    if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'Invalid credentials.' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email address.' });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({ message: 'Account is deactivated. Please contact administrator.' });
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials.' });
+      return res.status(401).json({ message: 'Invalid password.' });
     }
 
     // Generate token

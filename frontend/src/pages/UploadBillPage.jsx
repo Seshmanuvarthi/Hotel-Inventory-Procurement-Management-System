@@ -6,49 +6,80 @@ const UploadBillPage = () => {
   const navigate = useNavigate();
   const { id } = useParams(); // procurementRequestId
   const [request, setRequest] = useState(null);
+  const [vendors, setVendors] = useState([]);
   const [billData, setBillData] = useState({
     vendorName: '',
     billNumber: '',
     billDate: '',
+    gstPercentage: 5,
     billFileUrl: '',
     remarks: '',
     items: []
   });
   const [loading, setLoading] = useState(true);
+  const [loadingVendors, setLoadingVendors] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (!id) return;
-  
-    const fetchRequestDetails = async () => {
+    const fetchData = async () => {
+      if (!id) {
+        setMessage('Procurement request ID is required');
+        setLoading(false);
+        setLoadingVendors(false);
+        return;
+      }
+
       try {
+        // Fetch vendors
+        const vendorsResponse = await axiosInstance.get('/vendors');
+        setVendors(vendorsResponse.data);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+      } finally {
+        setLoadingVendors(false);
+      }
+
+      try {
+        console.log('Fetching request details for ID:', id);
         const response = await axiosInstance.get(`/procurement/${id}`);
+        console.log('Response received:', response.data);
+
+        if (!response.data || !response.data.items || !Array.isArray(response.data.items)) {
+          throw new Error('Invalid response structure: missing or invalid items array');
+        }
+
         setRequest(response.data);
-  
-        const prefilledItems = response.data.items.map(item => ({
-          itemId: item.itemId._id,
-          quantity: item.quantity,
-          unit: item.unit,
-          pricePerUnit: item.pricePerUnit,
-          gstApplicable: item.gstApplicable,
-          gstAmount: 0,
-          totalAmount: item.quantity * item.pricePerUnit
-        }));
-  
+
+        const prefilledItems = response.data.items.map(item => {
+          if (!item.itemId || !item.itemId._id) {
+            throw new Error('Invalid item structure: missing itemId');
+          }
+          return {
+            itemId: item.itemId._id,
+            quantity: item.quantity || 0,
+            unit: item.unit || '',
+            pricePerUnit: item.pricePerUnit || 0,
+            gstApplicable: item.gstApplicable || false,
+            gstAmount: 0,
+            totalAmount: (item.quantity || 0) * (item.pricePerUnit || 0)
+          };
+        });
+
         setBillData(prev => ({
           ...prev,
           vendorName: response.data.items[0]?.vendorName || '',
           items: prefilledItems
         }));
       } catch (error) {
-        setMessage('Error fetching request details');
+        console.error('Error fetching request details:', error);
+        setMessage('Error fetching request details: ' + (error.message || 'Unknown error'));
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchRequestDetails();
+
+    fetchData();
   }, [id]);
   
 
@@ -56,18 +87,47 @@ const UploadBillPage = () => {
     const updatedItems = [...billData.items];
     updatedItems[index][field] = value;
 
-    // Recalculate totalAmount
-    if (field === 'pricePerUnit' || field === 'gstAmount') {
+    // Recalculate GST and totalAmount
+    if (field === 'pricePerUnit' || field === 'gstApplicable') {
       const quantity = parseFloat(updatedItems[index].quantity) || 0;
       const pricePerUnit = parseFloat(updatedItems[index].pricePerUnit) || 0;
-      const gstAmount = parseFloat(updatedItems[index].gstAmount) || 0;
-      updatedItems[index].totalAmount = quantity * pricePerUnit + gstAmount;
+      const gstPercentage = parseFloat(billData.gstPercentage) || 0;
+
+      if (updatedItems[index].gstApplicable) {
+        updatedItems[index].gstAmount = quantity * pricePerUnit * (gstPercentage / 100);
+      } else {
+        updatedItems[index].gstAmount = 0;
+      }
+
+      updatedItems[index].totalAmount = quantity * pricePerUnit + updatedItems[index].gstAmount;
     }
 
     setBillData(prev => ({
       ...prev,
       items: updatedItems
     }));
+  };
+
+  const handleGSTPercentageChange = (value) => {
+    const gstPercentage = parseFloat(value) || 0;
+    setBillData(prev => ({ ...prev, gstPercentage }));
+
+    // Recalculate all GST amounts
+    const updatedItems = billData.items.map(item => {
+      const quantity = parseFloat(item.quantity) || 0;
+      const pricePerUnit = parseFloat(item.pricePerUnit) || 0;
+
+      if (item.gstApplicable) {
+        item.gstAmount = quantity * pricePerUnit * (gstPercentage / 100);
+      } else {
+        item.gstAmount = 0;
+      }
+
+      item.totalAmount = quantity * pricePerUnit + item.gstAmount;
+      return item;
+    });
+
+    setBillData(prev => ({ ...prev, items: updatedItems }));
   };
 
   const handleSubmit = async (e) => {
@@ -141,14 +201,24 @@ const UploadBillPage = () => {
               <label htmlFor="vendorName" className="block text-sm font-medium text-gray-700">
                 Vendor Name *
               </label>
-              <input
-                type="text"
-                id="vendorName"
-                value={billData.vendorName}
-                onChange={(e) => setBillData(prev => ({ ...prev, vendorName: e.target.value }))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                required
-              />
+              {loadingVendors ? (
+                <div className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
+                  Loading vendors...
+                </div>
+              ) : (
+                <select
+                  id="vendorName"
+                  value={billData.vendorName}
+                  onChange={(e) => setBillData(prev => ({ ...prev, vendorName: e.target.value }))}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                >
+                  <option value="">Select Vendor</option>
+                  {vendors.map(vendor => (
+                    <option key={vendor._id} value={vendor.name}>{vendor.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label htmlFor="billNumber" className="block text-sm font-medium text-gray-700">
@@ -172,6 +242,21 @@ const UploadBillPage = () => {
                 value={billData.billDate}
                 onChange={(e) => setBillData(prev => ({ ...prev, billDate: e.target.value }))}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="gstPercentage" className="block text-sm font-medium text-gray-700">
+                GST Percentage *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                id="gstPercentage"
+                value={billData.gstPercentage}
+                onChange={(e) => handleGSTPercentageChange(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="5"
                 required
               />
             </div>
@@ -221,7 +306,7 @@ const UploadBillPage = () => {
                       <input
                         type="text"
                         value={item.unit}
-                        readOnly
+                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
                       />
                     </div>
@@ -250,10 +335,9 @@ const UploadBillPage = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={item.gstAmount}
-                        onChange={(e) => handleItemChange(index, 'gstAmount', parseFloat(e.target.value) || 0)}
-                        disabled={!item.gstApplicable}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                        value={item.gstAmount.toFixed(2)}
+                        readOnly
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
                       />
                     </div>
                     <div className="md:col-span-3">

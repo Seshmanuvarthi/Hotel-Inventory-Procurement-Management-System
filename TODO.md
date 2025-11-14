@@ -1,49 +1,26 @@
-# PHASE 11 — COMPLETE UI/UX REDESIGN
+# TODO: Update Hotel Dashboard Pages UI
 
-## PART 1 — Tailwind Custom Theme Setup
-- [x] Update tailwind.config.js with custom colors, fonts, shadows, transitions
+## Overview
+Update the UI for ConsumptionEntry and SalesEntry pages to match the consistent styling and responsiveness of other dashboards (ProcurementDashboard, StoreManagerDashboard, HotelDashboard, AccountsDashboard).
 
-## PART 2 — Reusable Components (React + Tailwind)
-- [x] Create Layout.jsx (Sidebar + Topbar wrapper)
-- [x] Create Sidebar.jsx (role-specific menus with icons)
-- [x] Create Topbar.jsx (page title + logout)
-- [x] Create DashboardCard.jsx (summary metrics)
-- [x] Create PrimaryButton.jsx & SecondaryButton.jsx (button system)
-- [x] Create StyledTable.jsx (rounded corners, alternating rows)
-- [x] Create StyledForm.jsx (input, label, dropdown)
+## Tasks
+- [x] Update ConsumptionEntry.jsx
+  - Wrap with Layout component
+  - Add header section
+  - Use StyledForm for all form elements
+  - Improve item management UI
+  - Add guidelines section
 
-## PART 3 — Apply New UI to ALL Dashboards
-- [x] Update SuperAdminDashboard.jsx
-- [x] Update MDApprovalDashboard.jsx
-- [x] Update ProcurementDashboard.jsx
-- [x] Update HotelDashboard.jsx
-- [x] Update StoreManagerDashboard.jsx
-- [x] Update AccountsDashboard.jsx
-- [x] Update MDAnalyticsDashboard.jsx
-- [x] Update MDReportsDashboard.jsx
+- [x] Update SalesEntry.jsx
+  - Wrap with Layout component
+  - Add header section
+  - Use StyledForm for all form elements
+  - Improve sales items UI
+  - Add guidelines section
 
-## PART 4 — Apply Brand Theme to Forms & Pages
-- [ ] Update AddRecipePage.jsx
-- [ ] Update CreateProcurementRequest.jsx
-- [ ] Update EnterPaymentPage.jsx
-- [ ] Update ConsumptionEntry.jsx
-- [ ] Update SalesEntry.jsx
-- [ ] Update AddItemPage.jsx, ItemsListPage.jsx, EditItemPage.jsx
-- [ ] Update AddUserOrHotelPage.jsx, AddOptionsPage.jsx, DeleteOptionsPage.jsx
-- [ ] Update UploadBillPage.jsx, BillsListPage.jsx
-- [ ] Update IssueStockPage.jsx, StoreStockPage.jsx, IssueLogPage.jsx
-- [ ] Update PendingPaymentsPage.jsx, VendorLedger.jsx, PaymentSummary.jsx
-- [ ] Update ConsumedVsSalesPage.jsx, IssuedVsConsumedPage.jsx, LeakagePage.jsx
-
-## PART 5 — Animations & Polish
-- [ ] Add smooth hover effects
-- [ ] Add card fade-in animation
-- [ ] Add loading skeleton for graphs
-- [ ] Add sidebar collapse/expand animation
-- [ ] Add responsive design for all dashboards
-
-## PART 6 — Testing & Final Touches
-- [ ] Test all dashboards for consistency
-- [ ] Ensure no default blue/white Tailwind
-- [ ] Verify hotel-grade premium design
-- [ ] Check responsive behavior
+## Notes
+- All pages should use Layout component for consistent navigation
+- Use StyledForm and StyledTable components for form inputs and tables
+- Add appropriate header sections with titles and descriptions
+- Include guidelines sections at the bottom similar to other dashboards
+- Ensure responsive design with proper grid layouts

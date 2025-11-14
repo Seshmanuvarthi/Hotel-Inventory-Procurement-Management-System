@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const HotelConsumption = require('../models/HotelConsumption');
 const StockIssue = require('../models/StockIssue');
 const User = require('../models/User');
+const { toBaseUnit } = require('../utils/unitConverter');
 
 // POST /consumption - Create consumption entry
 const createConsumption = async (req, res) => {
@@ -21,30 +22,33 @@ const createConsumption = async (req, res) => {
     let overConsumption = false;
 
     for (const item of items) {
-      // Get total issued to this hotel for this item (all dates)
+      // Get total issued to this hotel for this item (all dates) - convert to base units
       const totalIssued = await StockIssue.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotelId) } },
         { $unwind: '$items' },
         { $match: { 'items.itemId': new mongoose.Types.ObjectId(item.itemId) } },
-        { $group: { _id: null, total: { $sum: '$items.quantityIssued' } } }
+        { $group: { _id: null, total: { $sum: '$items.quantityIssued' }, unit: { $first: '$items.unit' } } }
       ]);
 
-      const issued = totalIssued.length > 0 ? totalIssued[0].total : 0;
+      const issuedInBase = totalIssued.length > 0 ? toBaseUnit(totalIssued[0].total, totalIssued[0].unit) : 0;
 
-      // Get total consumed before this date for this hotel and item
+      // Get total consumed before this date for this hotel and item - convert to base units
       const totalConsumedBefore = await HotelConsumption.aggregate([
         { $match: { hotelId: new mongoose.Types.ObjectId(hotelId), date: { $lt: consumptionDate } } },
         { $unwind: '$items' },
         { $match: { 'items.itemId': new mongoose.Types.ObjectId(item.itemId) } },
-        { $group: { _id: null, total: { $sum: '$items.quantityConsumed' } } }
+        { $group: { _id: null, total: { $sum: '$items.quantityConsumed' }, unit: { $first: '$items.unit' } } }
       ]);
 
-      const consumedBefore = totalConsumedBefore.length > 0 ? totalConsumedBefore[0].total : 0;
+      const consumedBeforeInBase = totalConsumedBefore.length > 0 ? toBaseUnit(totalConsumedBefore[0].total, totalConsumedBefore[0].unit) : 0;
 
-      const openingBalance = issued - consumedBefore;
-      const closingBalance = openingBalance - item.quantityConsumed;
+      // Current consumption in base units
+      const currentConsumptionInBase = toBaseUnit(item.quantityConsumed, item.unit);
 
-      if (closingBalance < 0) {
+      const openingBalanceInBase = issuedInBase - consumedBeforeInBase;
+      const closingBalanceInBase = openingBalanceInBase - currentConsumptionInBase;
+
+      if (closingBalanceInBase < 0) {
         overConsumption = true;
       }
 
@@ -52,8 +56,8 @@ const createConsumption = async (req, res) => {
         itemId: item.itemId,
         quantityConsumed: item.quantityConsumed,
         unit: item.unit,
-        openingBalance,
-        closingBalance
+        openingBalance: openingBalanceInBase, // Store in base units for consistency
+        closingBalance: closingBalanceInBase   // Store in base units for consistency
       });
     }
 

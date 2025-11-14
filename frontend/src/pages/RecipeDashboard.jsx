@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const RecipeDashboard = () => {
@@ -7,6 +10,7 @@ const RecipeDashboard = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     fetchRecipes();
@@ -38,84 +42,87 @@ const RecipeDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
+      <Layout title="Recipe Management" userRole={user.role}>
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-accent">Loading recipes...</p>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Recipe Management</h2>
-          <div className="flex space-x-4">
-            <button
-              onClick={() => navigate('/add-recipe')}
-              className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Add Recipe
-            </button>
-            <button
-              onClick={() => navigate('/superadmin-dashboard')}
-              className="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Back to Dashboard
-            </button>
-          </div>
+    <Layout title="Recipe Management" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Recipe Management</h2>
+          <p className="text-accent">Manage your restaurant recipes and ingredients</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+        <div className="max-w-7xl mx-auto">
+          {error && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              {error}
+            </div>
+          )}
 
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <div></div>
+            <div className="flex space-x-4">
+              <PrimaryButton onClick={() => navigate('/add-recipe')}>
+                Add Recipe
+              </PrimaryButton>
+              <SecondaryButton onClick={() => navigate('/superadmin-dashboard')}>
+                Back to Dashboard
+              </SecondaryButton>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+            <h3 className="text-xl font-semibold text-text-dark mb-6">Recipes</h3>
+
             {recipes.length === 0 ? (
-              <li className="px-6 py-4 text-center text-gray-500">
-                No recipes found. Create your first recipe!
-              </li>
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🍽️</div>
+                <p className="text-xl text-secondary font-medium mb-2">No recipes found</p>
+                <p className="text-accent">Create your first recipe to get started.</p>
+              </div>
             ) : (
-              recipes.map((recipe) => (
-                <li key={recipe._id} className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-medium text-gray-900">{recipe.dishName}</h3>
-                          <p className="text-sm text-gray-500">
-                            Created by: {recipe.createdBy?.name || 'Unknown'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Ingredients: {recipe.ingredients?.length || 0}
-                          </p>
-                        </div>
+              <ul className="divide-y divide-secondary/20">
+                {recipes.map((recipe) => (
+                  <li key={recipe._id} className="px-6 py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium text-text-dark">{recipe.dishName}</h3>
+                        <p className="text-sm text-accent">
+                          Created by: {recipe.createdBy?.name || 'Unknown'}
+                        </p>
+                        <p className="text-sm text-accent">
+                          Ingredients: {recipe.ingredients?.length || 0}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <SecondaryButton onClick={() => navigate(`/edit-recipe/${recipe._id}`)}>
+                          Edit
+                        </SecondaryButton>
+                        <button
+                          onClick={() => handleDelete(recipe._id)}
+                          className="py-2 px-4 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => navigate(`/edit-recipe/${recipe._id}`)}
-                        className="py-1 px-3 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(recipe._id)}
-                        className="py-1 px-3 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))
+                  </li>
+                ))}
+              </ul>
             )}
-          </ul>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

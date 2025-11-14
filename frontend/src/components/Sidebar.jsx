@@ -15,7 +15,7 @@ import {
   X
 } from 'lucide-react';
 
-const Sidebar = ({ userRole, collapsed, onToggle }) => {
+const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,7 +82,10 @@ const Sidebar = ({ userRole, collapsed, onToggle }) => {
             return (
               <li key={index}>
                 <button
-                  onClick={() => navigate(item.path)}
+                  onClick={() => {
+                    navigate(item.path);
+                    if (isMobile) onCloseMobile();
+                  }}
                   className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 group ${
                     isActive
                       ? 'bg-secondary text-primary shadow-luxury'

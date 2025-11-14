@@ -135,10 +135,32 @@ const StyledTextarea = ({
   );
 };
 
-const StyledForm = {
-  Input: StyledInput,
-  Select: StyledSelect,
-  Textarea: StyledTextarea,
+const StyledForm = ({ fields, formData, onChange }) => {
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {fields.map((field, index) => {
+        const { type, name, ...rest } = field;
+        const value = name.includes('.') ? getNestedValue(formData, name) : formData[name];
+
+        switch (type) {
+          case 'select':
+            return <StyledSelect key={index} name={name} value={value} onChange={onChange} {...rest} />;
+          case 'textarea':
+            return <StyledTextarea key={index} name={name} value={value} onChange={onChange} {...rest} />;
+          default:
+            return <StyledInput key={index} name={name} value={value} onChange={onChange} {...rest} />;
+        }
+      })}
+    </div>
+  );
 };
+
+StyledForm.Input = StyledInput;
+StyledForm.Select = StyledSelect;
+StyledForm.Textarea = StyledTextarea;
 
 export default StyledForm;

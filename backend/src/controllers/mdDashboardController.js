@@ -1,5 +1,4 @@
-const ProcurementBill = require('../models/ProcurementBill');
-const PaymentEntry = require('../models/PaymentEntry');
+const ProcurementOrder = require('../models/ProcurementOrder');
 const getLeakageData = require('../services/leakageService');
 const StockIssue = require('../models/StockIssue');
 const HotelConsumption = require('../models/HotelConsumption');
@@ -17,29 +16,30 @@ const getSummary = async (req, res) => {
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
     // Total procurement this month
-    const procurementResult = await ProcurementBill.aggregate([
-      { $match: { billDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+    const procurementResult = await ProcurementOrder.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth, $lte: endOfMonth } } },
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
     const totalProcurementThisMonth = procurementResult.length > 0 ? procurementResult[0].total : 0;
 
-    // Total payments this month
-    const paymentsResult = await PaymentEntry.aggregate([
-      { $match: { paymentDate: { $gte: startOfMonth, $lte: endOfMonth } } },
-      { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+    // Total payments this month (paid orders)
+    const paymentsResult = await ProcurementOrder.aggregate([
+      { $match: { paidAt: { $gte: startOfMonth, $lte: endOfMonth }, status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
     const totalPaymentsThisMonth = paymentsResult.length > 0 ? paymentsResult[0].total : 0;
 
-    // Total pending amount (all bills - all payments)
-    const allBillsResult = await ProcurementBill.aggregate([
+    // Total pending amount (all orders - paid orders)
+    const allOrdersResult = await ProcurementOrder.aggregate([
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const allPaymentsResult = await PaymentEntry.aggregate([
-      { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+    const paidOrdersResult = await ProcurementOrder.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const totalBills = allBillsResult.length > 0 ? allBillsResult[0].total : 0;
-    const totalPayments = allPaymentsResult.length > 0 ? allPaymentsResult[0].total : 0;
-    const totalPendingAmount = totalBills - totalPayments;
+    const totalOrders = allOrdersResult.length > 0 ? allOrdersResult[0].total : 0;
+    const totalPaid = paidOrdersResult.length > 0 ? paidOrdersResult[0].total : 0;
+    const totalPendingAmount = totalOrders - totalPaid;
 
     // Total leakage (issued - consumed)
     const issuedResult = await StockIssue.aggregate([
@@ -194,14 +194,14 @@ const getProcurementVsPayments = async (req, res) => {
       const startOfMonth = new Date(yearInt, month, 1);
       const endOfMonth = new Date(yearInt, month + 1, 0);
 
-      const procurementResult = await ProcurementBill.aggregate([
-        { $match: { billDate: { $gte: startOfMonth, $lte: endOfMonth } } },
+      const procurementResult = await ProcurementOrder.aggregate([
+        { $match: { createdAt: { $gte: startOfMonth, $lte: endOfMonth } } },
         { $group: { _id: null, total: { $sum: '$finalAmount' } } }
       ]);
 
-      const paymentsResult = await PaymentEntry.aggregate([
-        { $match: { paymentDate: { $gte: startOfMonth, $lte: endOfMonth } } },
-        { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+      const paymentsResult = await ProcurementOrder.aggregate([
+        { $match: { paidAt: { $gte: startOfMonth, $lte: endOfMonth }, status: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$finalAmount' } } }
       ]);
 
       const procurement = procurementResult.length > 0 ? procurementResult[0].total : 0;
@@ -313,26 +313,26 @@ const getVendorPerformance = async (req, res) => {
     const { from, to } = req.query;
     const dateMatch = from && to ? { $gte: new Date(from), $lte: new Date(to) } : {};
 
-    const bills = await ProcurementBill.aggregate([
-      ...(from && to ? [{ $match: { billDate: dateMatch } }] : []),
+    const orders = await ProcurementOrder.aggregate([
+      ...(from && to ? [{ $match: { createdAt: dateMatch } }] : []),
       { $group: { _id: '$vendorName', totalProcured: { $sum: '$finalAmount' } } }
     ]);
 
-    const payments = await PaymentEntry.aggregate([
-      ...(from && to ? [{ $match: { paymentDate: dateMatch } }] : []),
-      { $group: { _id: '$vendorName', totalPaid: { $sum: '$amountPaid' } } }
+    const paidOrders = await ProcurementOrder.aggregate([
+      ...(from && to ? [{ $match: { paidAt: dateMatch, status: 'paid' } }] : [{ $match: { status: 'paid' } }]),
+      { $group: { _id: '$vendorName', totalPaid: { $sum: '$finalAmount' } } }
     ]);
 
     const vendorMap = new Map();
-    bills.forEach(bill => {
-      vendorMap.set(bill._id, { vendorName: bill._id, totalProcured: bill.totalProcured, totalPaid: 0 });
+    orders.forEach(order => {
+      vendorMap.set(order._id, { vendorName: order._id, totalProcured: order.totalProcured, totalPaid: 0 });
     });
-    payments.forEach(payment => {
-      const key = payment._id;
+    paidOrders.forEach(paidOrder => {
+      const key = paidOrder._id;
       if (vendorMap.has(key)) {
-        vendorMap.get(key).totalPaid = payment.totalPaid;
+        vendorMap.get(key).totalPaid = paidOrder.totalPaid;
       } else {
-        vendorMap.set(key, { vendorName: key, totalProcured: 0, totalPaid: payment.totalPaid });
+        vendorMap.set(key, { vendorName: key, totalProcured: 0, totalPaid: paidOrder.totalPaid });
       }
     });
 
@@ -364,15 +364,16 @@ const getInsights = async (req, res) => {
     }
 
     // Insight 2: Pending payments
-    const pendingResult = await PaymentEntry.aggregate([
-      { $group: { _id: null, totalPaid: { $sum: '$amountPaid' } } }
+    const paidOrdersResult = await ProcurementOrder.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, totalPaid: { $sum: '$finalAmount' } } }
     ]);
-    const totalPaid = pendingResult.length > 0 ? pendingResult[0].totalPaid : 0;
-    const totalBillsResult = await ProcurementBill.aggregate([
+    const totalPaid = paidOrdersResult.length > 0 ? paidOrdersResult[0].totalPaid : 0;
+    const totalOrdersResult = await ProcurementOrder.aggregate([
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const totalBills = totalBillsResult.length > 0 ? totalBillsResult[0].total : 0;
-    const pending = totalBills - totalPaid;
+    const totalOrders = totalOrdersResult.length > 0 ? totalOrdersResult[0].total : 0;
+    const pending = totalOrders - totalPaid;
     if (pending > 10000) {
       insights.push(`High pending payments amounting to ₹${pending}. Review payment schedules.`);
     }

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import StyledTable from '../components/StyledTable';
 import axiosInstance from '../utils/axiosInstance';
 
 const StoreStockPage = () => {
-  const navigate = useNavigate();
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     fetchStoreStock();
@@ -29,95 +30,97 @@ const StoreStockPage = () => {
     return stock.quantityOnHand <= reorderLevel;
   };
 
+  const tableHeaders = ['Item Name', 'Quantity On Hand', 'Minimum Stock Level', 'Reorder Level %', 'Status'];
+  const tableData = stocks.map((stock) => [
+    stock.itemId?.name || 'Unknown Item',
+    `${stock.quantityOnHand} ${stock.itemId?.unit || ''}`,
+    stock.minimumStockLevel || 'Not set',
+    `${stock.reorderLevelPercent}%`,
+    isLowStock(stock) ? 'Low Stock' : 'In Stock'
+  ]);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
+      <Layout title="Store Stock" userRole={user.role}>
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-accent">Loading store stock...</p>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
+  const lowStockCount = stocks.filter(stock => isLowStock(stock)).length;
+  const totalItems = stocks.length;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Store Stock</h2>
-          <button
-            onClick={() => navigate('/store-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Dashboard
-          </button>
+    <Layout title="Store Stock" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Store Stock</h2>
+          <p className="text-accent">Monitor central store inventory levels and stock status</p>
         </div>
 
-        {message && (
-          <div className="mb-4 text-center text-sm text-red-600">
-            {message}
-          </div>
-        )}
+        <div className="max-w-7xl mx-auto">
+          {message && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              {message}
+            </div>
+          )}
 
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Item Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Quantity On Hand
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Minimum Stock Level
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Reorder Level %
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {stocks.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    No stock data available
-                  </td>
-                </tr>
-              ) : (
-                stocks.map((stock) => (
-                  <tr key={stock._id} className={isLowStock(stock) ? 'bg-red-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {stock.itemId?.name || 'Unknown Item'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {stock.quantityOnHand} {stock.itemId?.unit || ''}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {stock.minimumStockLevel || 'Not set'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {stock.reorderLevelPercent}%
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {isLowStock(stock) ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                          Low Stock
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          In Stock
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary mb-2">{totalItems}</div>
+                <p className="text-sm text-accent">Total Items</p>
+              </div>
+            </div>
+            <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-secondary mb-2">{totalItems - lowStockCount}</div>
+                <p className="text-sm text-accent">In Stock</p>
+              </div>
+            </div>
+            <div className="bg-card rounded-xl shadow-luxury p-6 border border-warning/20">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-warning mb-2">{lowStockCount}</div>
+                <p className="text-sm text-accent">Low Stock</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+            <h3 className="text-xl font-semibold text-text-dark mb-6">Inventory Overview</h3>
+
+            {stocks.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📦</div>
+                <p className="text-xl text-secondary font-medium mb-2">No stock data available</p>
+                <p className="text-accent">Stock information will appear here once items are added.</p>
+              </div>
+            ) : (
+              <StyledTable
+                headers={tableHeaders}
+                data={tableData}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-secondary/20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-text-dark mb-2">Stock Management Guidelines</h3>
+            <p className="text-sm text-accent">
+              Monitor stock levels regularly and reorder items when they reach the reorder level.
+              Items marked as "Low Stock" require immediate attention for procurement.
+              Maintain accurate minimum stock levels to ensure smooth operations.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

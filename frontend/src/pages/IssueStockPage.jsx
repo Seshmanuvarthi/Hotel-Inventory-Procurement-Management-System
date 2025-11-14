@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import StyledForm from '../components/StyledForm';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const IssueStockPage = () => {
-  const navigate = useNavigate();
   const [hotels, setHotels] = useState([]);
   const [items, setItems] = useState([]);
   const [selectedHotel, setSelectedHotel] = useState('');
   const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const units = ["kg", "g", "litre", "ml", "piece", "packet", "dozen", "bottle", "can", "box"];
 
   useEffect(() => {
     fetchHotels();
@@ -105,123 +109,135 @@ const IssueStockPage = () => {
     }
   };
 
+  const hotelOptions = hotels.map(hotel => ({
+    value: hotel._id,
+    label: `${hotel.name} - ${hotel.branch}`
+  }));
+
+  const itemOptions = items.map(item => {
+    const stockInfo = stockItems.find(s => s.itemId === item._id);
+    return {
+      value: item._id,
+      label: `${item.name} (Available: ${stockInfo?.quantityOnHand || 0} ${item.unit})`
+    };
+  });
+
+  const unitOptions = units.map(unit => ({
+    value: unit,
+    label: unit
+  }));
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Issue Stock to Hotel</h2>
-          <button
-            onClick={() => navigate('/store-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Dashboard
-          </button>
+    <Layout title="Issue Stock" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Issue Stock to Hotel</h2>
+          <p className="text-accent">Distribute inventory items to hotels and manage stock allocation</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="hotel" className="block text-sm font-medium text-gray-700">
-              Select Hotel
-            </label>
-            <select
-              id="hotel"
-              value={selectedHotel}
-              onChange={(e) => setSelectedHotel(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            >
-              <option value="">Select a hotel</option>
-              {hotels.map(hotel => (
-                <option key={hotel._id} value={hotel._id}>
-                  {hotel.name} - {hotel.location}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <StyledForm.Select
+                label="Select Hotel"
+                value={selectedHotel}
+                onChange={(e) => setSelectedHotel(e.target.value)}
+                options={hotelOptions}
+                placeholder="Select a hotel"
+                required
+              />
 
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Items to Issue</h3>
-              <button
-                type="button"
-                onClick={addItem}
-                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                + Add Item
-              </button>
-            </div>
-
-            {stockItems.map((item, index) => (
-              <div key={index} className="flex space-x-4 items-end mb-4 p-4 border border-gray-200 rounded-md">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700">Item</label>
-                  <select
-                    value={item.itemId}
-                    onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                  >
-                    <option value="">Select item</option>
-                    {items.map(itemOption => (
-                      <option key={itemOption._id} value={itemOption._id}>
-                        {itemOption.name} (Available: {stockItems.find(s => s.itemId?.itemId === itemOption._id)?.quantityOnHand || 0})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700">Quantity</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={item.quantityIssued}
-                    onChange={(e) => handleItemChange(index, 'quantityIssued', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Quantity to issue"
-                    required
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700">Unit</label>
-                  <input
-                    type="text"
-                    value={item.unit}
-                    readOnly
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                    placeholder="Unit"
-                  />
-                </div>
-                {stockItems.length > 1 && (
-                  <button
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold text-text-dark">Items to Issue</h3>
+                  <PrimaryButton
                     type="button"
-                    onClick={() => removeItem(index)}
-                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    onClick={addItem}
+                    className="px-4 py-2"
                   >
-                    Remove
-                  </button>
-                )}
+                    + Add Item
+                  </PrimaryButton>
+                </div>
+
+                {stockItems.map((item, index) => (
+                  <div key={index} className="bg-secondary/5 p-4 rounded-lg border border-secondary/20">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                      <StyledForm.Select
+                        label="Item"
+                        value={item.itemId}
+                        onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
+                        options={itemOptions}
+                        placeholder="Select item"
+                        required
+                      />
+
+                      <StyledForm.Input
+                        label="Quantity"
+                        type="number"
+                        step="0.01"
+                        value={item.quantityIssued}
+                        onChange={(e) => handleItemChange(index, 'quantityIssued', e.target.value)}
+                        placeholder="Quantity to issue"
+                        required
+                      />
+
+                      <StyledForm.Select
+                        label="Unit"
+                        value={item.unit}
+                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                        options={unitOptions}
+                        placeholder="Select Unit"
+                      />
+
+                      {stockItems.length > 1 && (
+                        <div className="flex justify-end">
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            className="px-3 py-2 bg-red-500 hover:bg-red-600"
+                          >
+                            Remove
+                          </SecondaryButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {message && (
-            <div className={`text-center text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-              {message}
-            </div>
-          )}
+              {message && (
+                <div className={`text-center p-3 rounded-lg ${
+                  message.includes('success')
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {message}
+                </div>
+              )}
 
-          <div className="flex space-x-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Issuing...' : 'Issue Stock'}
-            </button>
+              <PrimaryButton
+                type="submit"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? 'Issuing...' : 'Issue Stock'}
+              </PrimaryButton>
+            </form>
           </div>
-        </form>
+        </div>
+
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-secondary/20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-text-dark mb-2">Stock Issuance Guidelines</h3>
+            <p className="text-sm text-accent">
+              Select the appropriate hotel and verify available stock quantities before issuing.
+              Ensure accurate quantities to maintain proper inventory control.
+              All stock issuances are tracked for audit and reporting purposes.
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

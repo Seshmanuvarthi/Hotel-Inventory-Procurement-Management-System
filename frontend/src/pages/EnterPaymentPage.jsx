@@ -1,34 +1,37 @@
 import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
+import StyledForm from '../components/StyledForm';
+import PrimaryButton from '../components/PrimaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const EnterPaymentPage = () => {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState('');
   const [vendorName, setVendorName] = useState('');
-  const [amountPaid, setAmountPaid] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
-  const [paymentDate, setPaymentDate] = useState('');
-  const [remarks, setRemarks] = useState('');
   const [loading, setLoading] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    const fetchBills = async () => {
+    const fetchOrders = async () => {
       try {
-        const response = await axiosInstance.get('/procurement/bills');
-        setBills(response.data);
+        // Only fetch MD approved procurement orders that are pending payment
+        const response = await axiosInstance.get('/procurement-orders');
+        const pendingPaymentOrders = response.data.filter(order => order.status === 'pending_payment');
+        setBills(pendingPaymentOrders);
       } catch (error) {
-        console.error('Error fetching bills:', error);
+        console.error('Error fetching procurement orders:', error);
       }
     };
-    fetchBills();
+    fetchOrders();
   }, []);
 
   const handleBillChange = (e) => {
-    const billId = e.target.value;
-    setSelectedBill(billId);
-    const bill = bills.find(b => b._id === billId);
-    if (bill) {
-      setVendorName(bill.vendorName);
+    const orderId = e.target.value;
+    setSelectedBill(orderId);
+    const order = bills.find(o => o._id === orderId);
+    if (order) {
+      setVendorName(order.vendorName);
     }
   };
 
@@ -36,107 +39,90 @@ const EnterPaymentPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axiosInstance.post('/payments', {
-        procurementBillId: selectedBill,
-        amountPaid: parseFloat(amountPaid),
-        paymentMode,
-        paymentDate,
-        remarks
+      await axiosInstance.patch(`/procurement-orders/${selectedBill}/pay`, {
+        paymentMode
       });
-      alert('Payment entered successfully');
+      alert('Payment marked successfully');
       // Reset form
       setSelectedBill('');
       setVendorName('');
-      setAmountPaid('');
       setPaymentMode('cash');
-      setPaymentDate('');
-      setRemarks('');
     } catch (error) {
-      alert('Error entering payment: ' + error.response?.data?.message);
+      alert('Error marking payment: ' + error.response?.data?.message);
     }
     setLoading(false);
   };
 
+  const billOptions = bills.map(order => ({
+    value: order._id,
+    label: `${order.vendorName} - ${order.billNumber} - ₹${order.finalAmount}`
+  }));
+
+  const paymentModeOptions = [
+    { value: 'cash', label: 'Cash' },
+    { value: 'upi', label: 'UPI' },
+    { value: 'bank-transfer', label: 'Bank Transfer' }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">Enter Payment</h1>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700">Procurement Bill</label>
-            <select
-              value={selectedBill}
-              onChange={handleBillChange}
-              className="w-full p-2 border border-gray-300 rounded"
-              required
-            >
-              <option value="">Select Bill</option>
-              {bills.map(bill => (
-                <option key={bill._id} value={bill._id}>
-                  {bill.vendorName} - {bill.billNumber} - ₹{bill.finalAmount}
-                </option>
-              ))}
-            </select>
+    <Layout title="Enter Payment" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Enter Payment</h2>
+          <p className="text-accent">Record vendor payments and maintain financial records</p>
+        </div>
+
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <StyledForm.Select
+                label="Procurement Bill"
+                value={selectedBill}
+                onChange={handleBillChange}
+                options={billOptions}
+                placeholder="Select Bill"
+                required
+              />
+
+              <StyledForm.Input
+                label="Vendor Name"
+                type="text"
+                value={vendorName}
+                readOnly
+                className="bg-secondary/5"
+              />
+
+              <StyledForm.Select
+                label="Payment Mode"
+                value={paymentMode}
+                onChange={(e) => setPaymentMode(e.target.value)}
+                options={paymentModeOptions}
+                required
+              />
+
+              <PrimaryButton
+                type="submit"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? 'Processing...' : 'Mark as Paid'}
+              </PrimaryButton>
+            </form>
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Vendor Name</label>
-            <input
-              type="text"
-              value={vendorName}
-              readOnly
-              className="w-full p-2 border border-gray-300 rounded bg-gray-100"
-            />
+        </div>
+
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-secondary/20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-text-dark mb-2">Payment Guidelines</h3>
+            <p className="text-sm text-accent">
+              Select the procurement order and mark it as paid once payment is completed.
+              Choose the appropriate payment mode for record keeping.
+              Stock will be automatically added to inventory after marking as paid.
+            </p>
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Amount Paid</label>
-            <input
-              type="number"
-              value={amountPaid}
-              onChange={(e) => setAmountPaid(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Payment Mode</label>
-            <select
-              value={paymentMode}
-              onChange={(e) => setPaymentMode(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded"
-            >
-              <option value="cash">Cash</option>
-              <option value="upi">UPI</option>
-              <option value="bank-transfer">Bank Transfer</option>
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Payment Date</label>
-            <input
-              type="date"
-              value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700">Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-          >
-            {loading ? 'Submitting...' : 'Enter Payment'}
-          </button>
-        </form>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

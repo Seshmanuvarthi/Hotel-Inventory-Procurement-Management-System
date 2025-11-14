@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import DashboardCard from '../components/DashboardCard';
 import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
-import { ChefHat, TrendingUp, BarChart3, Utensils } from 'lucide-react';
+import { ChefHat, TrendingUp } from 'lucide-react';
 
 const HotelDashboard = () => {
   const navigate = useNavigate();
@@ -55,13 +55,13 @@ const HotelDashboard = () => {
           <DashboardCard
             title="Performance Reports"
             value="Analytics View"
-            icon={BarChart3}
+            icon={TrendingUp}
             color="accent"
             subtitle="View consumption vs sales reports"
           >
             <div className="mt-4">
               <PrimaryButton
-                onClick={() => navigate('/consumed-vs-sales')}
+                onClick={() => navigate('/reports/consumed-vs-sales')}
                 className="w-full"
               >
                 View Reports
@@ -72,7 +72,7 @@ const HotelDashboard = () => {
 
         <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
           <h3 className="text-xl font-semibold text-text-dark mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/consumption-entry')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
@@ -86,20 +86,6 @@ const HotelDashboard = () => {
             >
               <TrendingUp className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
               <span className="text-sm font-medium text-text-dark">Sales Entry</span>
-            </button>
-            <button
-              onClick={() => navigate('/issued-vs-consumed')}
-              className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
-            >
-              <BarChart3 className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Issued vs Consumed</span>
-            </button>
-            <button
-              onClick={() => navigate('/leakage')}
-              className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
-            >
-              <Utensils className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Leakage Report</span>
             </button>
           </div>
         </div>

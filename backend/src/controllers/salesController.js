@@ -1,6 +1,7 @@
 const SalesEntry = require('../models/SalesEntry');
 const Recipe = require('../models/Recipe');
 const ExpectedConsumption = require('../models/ExpectedConsumption');
+const { toBaseUnit, areUnitsCompatible } = require('../utils/unitConverter');
 
 // POST /sales - Create sales entry
 const createSales = async (req, res) => {
@@ -60,7 +61,7 @@ const getSales = async (req, res) => {
     let matchConditions = {};
 
     if (hotelId) {
-      matchConditions.hotelId = require('mongoose').Types.ObjectId(hotelId);
+      matchConditions.hotelId = new require('mongoose').Types.ObjectId(hotelId);
     }
 
     if (from && to) {
@@ -101,7 +102,10 @@ const calculateExpectedConsumption = async (hotelId, sales, date) => {
       // Calculate expected consumption for each ingredient
       for (const ingredient of recipe.ingredients) {
         const { itemId, quantityRequired, unit } = ingredient;
-        const expectedQuantity = quantitySold * quantityRequired;
+
+        // Convert recipe quantity to base unit for consistent calculations
+        const recipeQtyInBase = toBaseUnit(quantityRequired, unit);
+        const expectedQuantityInBase = quantitySold * recipeQtyInBase;
 
         const itemKey = itemId._id.toString();
 
@@ -114,12 +118,13 @@ const calculateExpectedConsumption = async (hotelId, sales, date) => {
         }
 
         const itemData = expectedConsumptionMap.get(itemKey);
-        itemData.expectedQuantity += expectedQuantity;
+        itemData.expectedQuantity += expectedQuantityInBase;
         itemData.fromSales.push({
           dishName,
           quantitySold,
           recipeQtyRequired: quantityRequired,
-          calculated: expectedQuantity
+          recipeUnit: unit,
+          calculated: expectedQuantityInBase
         });
       }
     }

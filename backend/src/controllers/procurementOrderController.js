@@ -1,57 +1,51 @@
 const ProcurementOrder = require('../models/ProcurementOrder');
-const User = require('../models/User');
+const CentralStoreStock = require('../models/CentralStoreStock');
 
-// Create procurement order
+// Create procurement order (Procurement Officer)
 const createProcurementOrder = async (req, res) => {
   try {
-    const { vendorName, billNumber, billDate, items, gstPercentage, remarks } = req.body;
-    const createdBy = req.user.id;
+    const { vendorName, billNumber, billDate, items, remarks } = req.body;
+    const requestedBy = req.user.id;
 
     // Validate items
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'At least one item is required' });
     }
 
-    // Calculate totals
-    let totalAmountBeforeGST = 0;
+    // Calculate totals from frontend data
+    let subtotal = 0;
     let gstTotal = 0;
 
     const processedItems = items.map(item => {
       const amountBeforeGST = item.quantity * item.pricePerUnit;
-      totalAmountBeforeGST += amountBeforeGST;
-
-      if (item.gstApplicable) {
-        const itemGST = amountBeforeGST * (gstPercentage / 100);
-        gstTotal += itemGST;
-        item.gstAmount = itemGST;
-      } else {
-        item.gstAmount = 0;
-      }
+      subtotal += amountBeforeGST;
+      gstTotal += item.gstAmount;
 
       return {
         itemId: item.itemId,
         quantity: item.quantity,
         unit: item.unit,
         pricePerUnit: item.pricePerUnit,
-        gstApplicable: item.gstApplicable,
+        gstPercentage: item.gstPercentage || 5,
         gstAmount: item.gstAmount,
-        totalAmount: amountBeforeGST + item.gstAmount
+        totalAmount: item.totalAmount
       };
     });
 
-    const finalAmount = totalAmountBeforeGST + gstTotal;
+    const finalAmount = subtotal + gstTotal;
 
+    // Create procurement order
     const procurementOrder = new ProcurementOrder({
       vendorName,
       billNumber,
       billDate,
       items: processedItems,
-      totalAmountBeforeGST,
-      gstPercentage: gstPercentage || 5,
+      subtotal,
       gstTotal,
       finalAmount,
-      createdBy,
-      remarks
+      requestedBy,
+      remarks,
+      status: 'pending_md_approval'
     });
 
     await procurementOrder.save();
@@ -66,11 +60,11 @@ const createProcurementOrder = async (req, res) => {
 };
 
 // Get all procurement orders
-const getAllOrders = async (req, res) => {
+const getAllProcurementOrders = async (req, res) => {
   try {
     const orders = await ProcurementOrder.find()
-      .populate('createdBy', 'name email')
-      .populate('approvedBy', 'name email')
+      .populate('requestedBy', 'name email')
+      .populate('approvedByMD', 'name email')
       .populate('paidBy', 'name email')
       .populate('items.itemId', 'name')
       .sort({ createdAt: -1 });
@@ -82,15 +76,15 @@ const getAllOrders = async (req, res) => {
 };
 
 // Get procurement order by ID
-const getOrderById = async (req, res) => {
+const getProcurementOrderById = async (req, res) => {
   try {
     const { id } = req.params;
 
     const order = await ProcurementOrder.findById(id)
-      .populate('createdBy', 'name email')
-      .populate('approvedBy', 'name email')
+      .populate('requestedBy', 'name email')
+      .populate('approvedByMD', 'name email')
       .populate('paidBy', 'name email')
-      .populate('items.itemId', 'name unit gstApplicable');
+      .populate('items.itemId', 'name unit');
 
     if (!order) {
       return res.status(404).json({ message: 'Procurement order not found' });
@@ -107,21 +101,21 @@ const mdApproveOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { remarks } = req.body;
-    const approvedBy = req.user.id;
+    const approvedByMD = req.user.id;
 
     const order = await ProcurementOrder.findById(id);
     if (!order) {
       return res.status(404).json({ message: 'Procurement order not found' });
     }
 
-    if (order.status !== 'pending') {
-      return res.status(400).json({ message: 'Order is not pending' });
+    if (order.status !== 'pending_md_approval') {
+      return res.status(400).json({ message: 'Order is not pending MD approval' });
     }
 
-    order.status = 'approved';
-    order.approvedBy = approvedBy;
+    order.status = 'pending_payment';
+    order.approvedByMD = approvedByMD;
     order.approvedAt = new Date();
-    order.approvalRemarks = remarks;
+    order.remarks = remarks || order.remarks;
 
     await order.save();
 
@@ -139,21 +133,18 @@ const mdRejectOrder = async (req, res) => {
   try {
     const { id } = req.params;
     const { remarks } = req.body;
-    const rejectedBy = req.user.id;
 
     const order = await ProcurementOrder.findById(id);
     if (!order) {
       return res.status(404).json({ message: 'Procurement order not found' });
     }
 
-    if (order.status !== 'pending') {
-      return res.status(400).json({ message: 'Order is not pending' });
+    if (order.status !== 'pending_md_approval') {
+      return res.status(400).json({ message: 'Order is not pending MD approval' });
     }
 
     order.status = 'rejected';
-    order.rejectedBy = rejectedBy;
-    order.rejectedAt = new Date();
-    order.rejectionRemarks = remarks;
+    order.remarks = remarks || order.remarks;
 
     await order.save();
 
@@ -166,8 +157,8 @@ const mdRejectOrder = async (req, res) => {
   }
 };
 
-// Mark order as paid
-const markOrderAsPaid = async (req, res) => {
+// Mark as paid (Accounts)
+const markAsPaid = async (req, res) => {
   try {
     const { id } = req.params;
     const { paymentMode, remarks } = req.body;
@@ -178,32 +169,55 @@ const markOrderAsPaid = async (req, res) => {
       return res.status(404).json({ message: 'Procurement order not found' });
     }
 
-    if (order.status !== 'approved') {
-      return res.status(400).json({ message: 'Order must be approved before payment' });
+    if (order.status !== 'pending_payment') {
+      return res.status(400).json({ message: 'Order is not pending payment' });
     }
 
     order.status = 'paid';
     order.paidBy = paidBy;
     order.paidAt = new Date();
     order.paymentMode = paymentMode;
-    order.paymentRemarks = remarks;
+    order.remarks = remarks || order.remarks;
 
     await order.save();
 
+    // Update central store stock
+    for (const item of order.items) {
+      let stock = await CentralStoreStock.findOne({ itemId: item.itemId });
+
+      if (!stock) {
+        stock = new CentralStoreStock({
+          itemId: item.itemId,
+          quantityOnHand: 0,
+          minimumStockLevel: 0
+        });
+      }
+
+      stock.quantityOnHand += item.quantity;
+
+      // Update previousMaxStock if new stock exceeds it
+      if (stock.quantityOnHand > (stock.previousMaxStock || 0)) {
+        stock.previousMaxStock = stock.quantityOnHand;
+      }
+
+      stock.lastUpdated = new Date();
+      await stock.save();
+    }
+
     res.json({
-      message: 'Order marked as paid successfully',
+      message: 'Payment marked successfully and stock updated',
       order
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error marking order as paid', error: error.message });
+    res.status(500).json({ message: 'Error marking payment', error: error.message });
   }
 };
 
 module.exports = {
   createProcurementOrder,
-  getAllOrders,
-  getOrderById,
+  getAllProcurementOrders,
+  getProcurementOrderById,
   mdApproveOrder,
   mdRejectOrder,
-  markOrderAsPaid
+  markAsPaid
 };

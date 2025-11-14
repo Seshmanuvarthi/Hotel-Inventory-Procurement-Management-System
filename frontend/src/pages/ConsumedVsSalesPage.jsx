@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const ConsumedVsSalesPage = () => {
-  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     hotelId: '',
     from: '',
@@ -13,6 +14,7 @@ const ConsumedVsSalesPage = () => {
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     fetchHotels();
@@ -79,117 +81,121 @@ const ConsumedVsSalesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Consumed vs Sales Report</h2>
-          <button
-            onClick={() => navigate('/md-reports-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Reports
-          </button>
+    <Layout title="Consumed vs Sales Report" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Consumed vs Sales Report</h2>
+          <p className="text-accent">Compare consumption data with sales figures</p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Hotel</label>
-              <select
-                value={filters.hotelId}
-                onChange={(e) => handleFilterChange('hotelId', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Hotels</option>
-                {hotels.map(hotel => (
-                  <option key={hotel._id} value={hotel._id}>{hotel.name}</option>
-                ))}
-              </select>
+        <div className="max-w-7xl mx-auto">
+          {message && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              {message}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">From Date</label>
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) => handleFilterChange('from', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+          )}
+
+          {/* Filters */}
+          <div className="bg-card rounded-xl shadow-luxury p-8 border border-secondary/10 mb-6">
+            <h3 className="text-xl font-semibold text-text-dark mb-6">Report Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">Hotel</label>
+                <select
+                  value={filters.hotelId}
+                  onChange={(e) => handleFilterChange('hotelId', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                >
+                  <option value="">All Hotels</option>
+                  {hotels.map(hotel => (
+                    <option key={hotel._id} value={hotel._id}>{hotel.name} - {hotel.branch}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">From Date</label>
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(e) => handleFilterChange('from', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">To Date</label>
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(e) => handleFilterChange('to', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">To Date</label>
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => handleFilterChange('to', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+            <div className="mt-8 flex justify-center space-x-4">
+              <PrimaryButton onClick={generateReport} disabled={loading}>
+                {loading ? 'Generating...' : 'Generate Report'}
+              </PrimaryButton>
+              {reportData && (
+                <SecondaryButton onClick={exportToCSV}>
+                  Export CSV
+                </SecondaryButton>
+              )}
             </div>
           </div>
-          <div className="mt-4 flex space-x-4">
-            <button
-              onClick={generateReport}
-              disabled={loading}
-              className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Generating...' : 'Generate Report'}
-            </button>
-            {reportData && (
-              <button
-                onClick={exportToCSV}
-                className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                Export CSV
-              </button>
-            )}
-          </div>
+
+          {/* Report Results */}
+          {reportData && (
+            <div className="bg-card rounded-xl shadow-luxury p-8 border border-secondary/10">
+              <h3 className="text-xl font-semibold text-text-dark mb-8">Report Results</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">{reportData.consumed.toFixed(2)}</div>
+                  <div className="text-sm text-blue-600 font-medium">Total Consumed</div>
+                </div>
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <div className="text-3xl font-bold text-green-600 mb-2">{reportData.sales.toFixed(2)}</div>
+                  <div className="text-sm text-green-600 font-medium">Total Sales (Quantity)</div>
+                </div>
+                <div className={`p-6 rounded-lg border ${reportData.difference >= 0 ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className={`text-3xl font-bold mb-2 ${reportData.difference >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {reportData.difference.toFixed(2)}
+                  </div>
+                  <div className={`text-sm font-medium ${reportData.difference >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    Difference (Consumed - Sales)
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-secondary/20 pt-6">
+                <h4 className="text-lg font-medium text-text-dark mb-4">Report Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  <div className="bg-background p-4 rounded-lg">
+                    <span className="font-medium text-text-dark">Hotel:</span>
+                    <span className="ml-2 text-accent">
+                      {reportData.hotelId ? reportData.hotelName || 'Unknown' : 'All Hotels'}
+                    </span>
+                  </div>
+                  <div className="bg-background p-4 rounded-lg md:col-span-2">
+                    <span className="font-medium text-text-dark">Date Range:</span>
+                    <span className="ml-2 text-accent">
+                      {reportData.dateRange?.from || 'N/A'} to {reportData.dateRange?.to || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!reportData && !loading && (
+            <div className="bg-card rounded-xl shadow-luxury p-12 border border-secondary/10 text-center">
+              <div className="text-6xl mb-4">📊</div>
+              <p className="text-xl text-secondary font-medium mb-2">No report data</p>
+              <p className="text-accent">Configure filters and generate a report to view results.</p>
+            </div>
+          )}
         </div>
-
-        {message && (
-          <div className="mb-4 text-center text-sm text-red-600">
-            {message}
-          </div>
-        )}
-
-        {/* Report Results */}
-        {reportData && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Report Results</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{reportData.consumed.toFixed(2)}</div>
-                <div className="text-sm text-blue-600">Total Consumed</div>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{reportData.sales.toFixed(2)}</div>
-                <div className="text-sm text-green-600">Total Sales (Quantity)</div>
-              </div>
-              <div className={`p-4 rounded-lg ${reportData.difference >= 0 ? 'bg-yellow-50' : 'bg-red-50'}`}>
-                <div className={`text-2xl font-bold ${reportData.difference >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {reportData.difference.toFixed(2)}
-                </div>
-                <div className={`text-sm ${reportData.difference >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  Difference (Consumed - Sales)
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <h4 className="text-md font-medium text-gray-900 mb-2">Report Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Hotel:</span> {reportData.hotelId ? reportData.hotelName || 'Unknown' : 'All Hotels'}
-                </div>
-                <div>
-                  <span className="font-medium">Date Range:</span> {reportData.dateRange?.from || 'N/A'} to {reportData.dateRange?.to || 'N/A'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
+    </Layout>
   );
 };
 

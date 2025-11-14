@@ -1,5 +1,4 @@
 const CentralStoreStock = require('../models/CentralStoreStock');
-const ProcurementRequest = require('../models/ProcurementRequest');
 const Item = require('../models/Item');
 
 // Get all store stock
@@ -36,51 +35,9 @@ const initializeStockForNewItem = async (itemId) => {
   }
 };
 
-// Increase stock on procurement approval
+// Increase stock on procurement approval (deprecated - now handled in procurementOrderController)
 const increaseStockOnProcurement = async (req, res) => {
-  try {
-    const { procurementRequestId } = req.body;
-
-    const procurementRequest = await ProcurementRequest.findById(procurementRequestId)
-      .populate('items.itemId');
-
-    if (!procurementRequest || procurementRequest.status !== 'approved') {
-      return res.status(400).json({ message: 'Invalid or unapproved procurement request' });
-    }
-
-    const updatedStocks = [];
-
-    for (const item of procurementRequest.items) {
-      let stock = await CentralStoreStock.findOne({ itemId: item.itemId._id });
-
-      if (!stock) {
-        stock = new CentralStoreStock({
-          itemId: item.itemId._id,
-          quantityOnHand: 0,
-          minimumStockLevel: 0
-        });
-      }
-
-      stock.quantityOnHand += item.quantity;
-
-      // Update previousMaxStock if new stock exceeds it
-      if (stock.quantityOnHand > (stock.previousMaxStock || 0)) {
-        stock.previousMaxStock = stock.quantityOnHand;
-      }
-
-      stock.lastUpdated = new Date();
-      await stock.save();
-
-      updatedStocks.push(stock);
-    }
-
-    res.json({
-      message: 'Stock updated successfully on procurement',
-      updatedStocks
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating stock on procurement', error: error.message });
-  }
+  return res.status(410).json({ message: 'This endpoint is deprecated. Stock updates are now handled automatically when orders are paid.' });
 };
 
 // Decrease stock on issue to hotel

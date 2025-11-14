@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const LeakagePage = () => {
@@ -12,6 +15,7 @@ const LeakagePage = () => {
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const generateReport = async () => {
     setLoading(true);
@@ -84,152 +88,144 @@ const LeakagePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Leakage Report</h2>
-          <button
-            onClick={() => navigate('/md-reports-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Reports
-          </button>
+    <Layout title="Leakage Report" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Leakage Report</h2>
+          <p className="text-accent">Identify discrepancies between issued and consumed stock</p>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Group By</label>
-              <select
-                value={filters.groupBy}
-                onChange={(e) => handleFilterChange('groupBy', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="hotel">By Hotel</option>
-                <option value="item">By Item</option>
-              </select>
+        <div className="max-w-7xl mx-auto">
+          {message && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              {message}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">From Date</label>
-              <input
-                type="date"
-                value={filters.from}
-                onChange={(e) => handleFilterChange('from', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">To Date</label>
-              <input
-                type="date"
-                value={filters.to}
-                onChange={(e) => handleFilterChange('to', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex space-x-4">
-            <button
-              onClick={generateReport}
-              disabled={loading}
-              className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
-              {loading ? 'Generating...' : 'Generate Report'}
-            </button>
-            {reportData.length > 0 && (
-              <button
-                onClick={exportToCSV}
-                className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                Export CSV
-              </button>
-            )}
-          </div>
-        </div>
+          )}
 
-        {message && (
-          <div className="mb-4 text-center text-sm text-red-600">
-            {message}
-          </div>
-        )}
-
-        {/* Report Results */}
-        {reportData.length > 0 && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Leakage by {filters.groupBy === 'hotel' ? 'Hotel' : 'Item'}
-              </h3>
+          {/* Filters */}
+          <div className="bg-card rounded-xl shadow-luxury p-8 border border-secondary/10 mb-6">
+            <h3 className="text-xl font-semibold text-text-dark mb-6">Report Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">Group By</label>
+                <select
+                  value={filters.groupBy}
+                  onChange={(e) => handleFilterChange('groupBy', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                >
+                  <option value="hotel">By Hotel</option>
+                  <option value="item">By Item</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">From Date</label>
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(e) => handleFilterChange('from', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-dark mb-2">To Date</label>
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(e) => handleFilterChange('to', e.target.value)}
+                  className="block w-full px-4 py-3 border border-secondary/30 rounded-lg shadow-sm placeholder-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors duration-200"
+                />
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {filters.groupBy === 'hotel' ? 'Hotel Name' : 'Item Name'}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Issued
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Consumed
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Leakage
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      % Difference
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reportData.map((item, index) => (
-                    <tr key={index} className={item.leakage > 0 ? 'bg-red-50' : 'bg-green-50'}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {filters.groupBy === 'hotel' ? item.hotelName : item.itemName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.issued.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.consumed.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <span className={item.leakage > 0 ? 'text-red-600' : 'text-green-600'}>
-                          {item.leakage.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.percentDifference.toFixed(2)}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => drillDown(item)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Drill Down
-                        </button>
-                      </td>
+            <div className="mt-8 flex justify-center space-x-4">
+              <PrimaryButton onClick={generateReport} disabled={loading}>
+                {loading ? 'Generating...' : 'Generate Report'}
+              </PrimaryButton>
+              {reportData.length > 0 && (
+                <SecondaryButton onClick={exportToCSV}>
+                  Export CSV
+                </SecondaryButton>
+              )}
+            </div>
+          </div>
+
+          {/* Report Results */}
+          {reportData.length > 0 && (
+            <div className="bg-card rounded-xl shadow-luxury border border-secondary/10 overflow-hidden">
+              <div className="px-8 py-6 border-b border-secondary/20">
+                <h3 className="text-xl font-semibold text-text-dark">
+                  Leakage by {filters.groupBy === 'hotel' ? 'Hotel' : 'Item'}
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-secondary/20">
+                  <thead className="bg-background">
+                    <tr>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        {filters.groupBy === 'hotel' ? 'Hotel Name' : 'Item Name'}
+                      </th>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        Issued
+                      </th>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        Consumed
+                      </th>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        Leakage
+                      </th>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        % Difference
+                      </th>
+                      <th className="px-8 py-4 text-left text-xs font-semibold text-accent uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-card divide-y divide-secondary/20">
+                    {reportData.map((item, index) => (
+                      <tr key={index} className={item.leakage > 0 ? 'bg-red-50' : 'bg-green-50'}>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm font-medium text-text-dark">
+                          {filters.groupBy === 'hotel' ? item.hotelName : item.itemName}
+                        </td>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm text-accent">
+                          {item.issued.toFixed(2)}
+                        </td>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm text-accent">
+                          {item.consumed.toFixed(2)}
+                        </td>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm font-medium">
+                          <span className={item.leakage > 0 ? 'text-red-600' : 'text-green-600'}>
+                            {item.leakage.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm text-accent">
+                          {item.percentDifference.toFixed(2)}%
+                        </td>
+                        <td className="px-8 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => drillDown(item)}
+                            className="text-primary hover:text-primary/80 font-medium transition-colors duration-200"
+                          >
+                            Drill Down
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {reportData.length === 0 && !loading && (
-          <div className="bg-white shadow rounded-lg p-6 text-center">
-            <p className="text-gray-500">No data available. Generate a report to see results.</p>
-          </div>
-        )}
+          {reportData.length === 0 && !loading && (
+            <div className="bg-card rounded-xl shadow-luxury p-12 border border-secondary/10 text-center">
+              <div className="text-6xl mb-4">📊</div>
+              <p className="text-xl text-secondary font-medium mb-2">No leakage data available</p>
+              <p className="text-accent">Configure filters and generate a report to identify discrepancies.</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

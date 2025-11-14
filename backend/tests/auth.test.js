@@ -98,7 +98,7 @@ describe('Authentication Tests', () => {
         .send({ email: 'invalid@test.com', password: 'wrongpassword' });
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe('Invalid credentials.');
+      expect(response.body.message).toBe('Invalid email address.');
     });
   });
 

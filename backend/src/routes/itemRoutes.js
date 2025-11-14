@@ -7,14 +7,15 @@ const {
   updateItem,
   disableItem
 } = require('../controllers/itemController');
+
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
 // POST /items - Create item (superadmin, procurement_officer)
 router.post('/', authMiddleware, roleMiddleware(['superadmin', 'procurement_officer']), createItem);
 
-// GET /items - Get all items (superadmin, procurement_officer, store_manager, hotel_manager)
-router.get('/', authMiddleware, roleMiddleware(['superadmin', 'procurement_officer', 'store_manager', 'hotel_manager']), getItems);
+// GET /items - Get all items (superadmin, procurement_officer, store_manager, hotel_manager, md, accounts)
+router.get('/', authMiddleware, roleMiddleware(['superadmin', 'procurement_officer', 'store_manager', 'hotel_manager', 'md', 'accounts']), getItems);
 
 // GET /items/:id - Get single item (superadmin, procurement_officer, store_manager)
 router.get('/:id', authMiddleware, roleMiddleware(['superadmin', 'procurement_officer', 'store_manager']), getItemById);

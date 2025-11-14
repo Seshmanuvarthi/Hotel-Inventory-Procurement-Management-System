@@ -5,6 +5,7 @@ import axiosInstance from '../utils/axiosInstance';
 const CreateProcurementRequest = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [requestItems, setRequestItems] = useState([{
     itemId: '',
     vendorName: '',
@@ -18,9 +19,12 @@ const CreateProcurementRequest = () => {
   const [remarks, setRemarks] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [loadingVendors, setLoadingVendors] = useState(true);
+  const units = ["kg", "g", "litre", "ml", "piece", "packet", "dozen", "bottle", "can", "box"];
 
   useEffect(() => {
     fetchItems();
+    fetchVendors();
   }, []);
 
   const fetchItems = async () => {
@@ -29,6 +33,17 @@ const CreateProcurementRequest = () => {
       setItems(response.data);
     } catch (error) {
       setMessage('Error fetching items');
+    }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const response = await axiosInstance.get('/vendors');
+      setVendors(response.data);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    } finally {
+      setLoadingVendors(false);
     }
   };
 
@@ -114,28 +129,28 @@ const CreateProcurementRequest = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-6 sm:py-8 lg:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Create Procurement Request</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-text-dark">Create Procurement Request</h2>
           <button
             onClick={() => navigate('/procurement-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full sm:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-card bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
           >
             Back to Dashboard
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="source" className="block text-sm font-medium text-gray-700">
+          <div className="max-w-xs">
+            <label htmlFor="source" className="block text-sm font-medium text-text-dark">
               Source
             </label>
             <select
               id="source"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
             >
               <option value="manual">Manual</option>
               <option value="xlsx-upload">XLSX Upload</option>
@@ -155,13 +170,13 @@ const CreateProcurementRequest = () => {
             </div>
 
             {requestItems.map((item, index) => (
-              <div key={index} className="flex flex-wrap gap-4 items-end mb-4 p-4 border border-gray-200 rounded-md">
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Item</label>
+              <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end mb-4 p-4 border border-secondary/20 rounded-md bg-card">
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Item</label>
                   <select
                     value={item.itemId}
                     onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
                     required
                   >
                     <option value="">Select item</option>
@@ -172,85 +187,104 @@ const CreateProcurementRequest = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Vendor Name</label>
-                  <input
-                    type="text"
-                    value={item.vendorName}
-                    onChange={(e) => handleItemChange(index, 'vendorName', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Vendor Name"
-                    required
-                  />
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Vendor Name</label>
+                  {loadingVendors ? (
+                    <div className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm bg-secondary/5 text-text-dark">
+                      Loading vendors...
+                    </div>
+                  ) : (
+                    <select
+                      value={item.vendorName}
+                      onChange={(e) => handleItemChange(index, 'vendorName', e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
+                      required
+                    >
+                      <option value="">Select Vendor</option>
+                      {vendors.map(vendor => (
+                        <option key={vendor._id} value={vendor.name}>{vendor.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Quantity</label>
                   <input
                     type="number"
                     step="0.01"
                     value={item.quantity}
                     onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
                     placeholder="Quantity"
                     required
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Unit</label>
-                  <input
-                    type="text"
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Unit</label>
+                  <select
                     value={item.unit}
-                    readOnly
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                    placeholder="Unit"
-                  />
+                    onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
+                  >
+                    <option value="">Select Unit</option>
+                    {units.map(unit => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Price per Unit</label>
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Price per Unit</label>
                   <input
                     type="number"
                     step="0.01"
                     value={item.pricePerUnit}
                     onChange={(e) => handleItemChange(index, 'pricePerUnit', e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
                     placeholder="Price per Unit"
                     required
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">GST Applicable</label>
-                  <input
-                    type="checkbox"
-                    checked={item.gstApplicable}
-                    onChange={(e) => handleItemChange(index, 'gstApplicable', e.target.checked)}
-                    className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">GST Applicable</label>
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={item.gstApplicable}
+                      onChange={(e) => handleItemChange(index, 'gstApplicable', e.target.checked)}
+                      className="h-4 w-4 text-secondary focus:ring-secondary border-secondary/20 rounded"
+                    />
+                    <span className="ml-2 text-sm text-text-dark">Yes</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <label className="block text-sm font-medium text-gray-700">Total Amount</label>
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-text-dark">Total Amount</label>
                   <input
                     type="number"
                     step="0.01"
                     value={item.totalAmount.toFixed(2)}
                     readOnly
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
+                    className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm bg-secondary/5 text-text-dark"
                   />
                 </div>
                 {requestItems.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  >
-                    Remove
-                  </button>
+                  <div className="w-full sm:col-span-2 lg:col-span-3 xl:col-span-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors duration-200"
+                    >
+                      Remove Item
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
           </div>
 
           <div>
-            <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="remarks" className="block text-sm font-medium text-text-dark">
               Remarks
             </label>
             <textarea
@@ -258,22 +292,22 @@ const CreateProcurementRequest = () => {
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 border border-secondary/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
               placeholder="Optional remarks"
             />
           </div>
 
           {message && (
-            <div className={`text-center text-sm ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-center text-sm p-3 rounded-md ${message.includes('success') ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
               {message}
             </div>
           )}
 
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="flex-1 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-card bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-colors duration-200"
             >
               {loading ? 'Creating...' : 'Create Request'}
             </button>

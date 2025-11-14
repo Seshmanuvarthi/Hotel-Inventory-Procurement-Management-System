@@ -18,9 +18,10 @@ const itemSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  gstApplicable: {
-    type: Boolean,
-    required: true
+  gstPercentage: {
+    type: Number,
+    required: true,
+    default: 5
   },
   gstAmount: {
     type: Number,
@@ -32,25 +33,21 @@ const itemSchema = new mongoose.Schema({
   }
 });
 
-const procurementBillSchema = new mongoose.Schema({
-  procurementRequestId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ProcurementRequest',
-    required: true
-  },
+const procurementOrderSchema = new mongoose.Schema({
   vendorName: {
     type: String,
     required: true
   },
   billNumber: {
-    type: String
+    type: String,
+    required: true
   },
   billDate: {
     type: Date,
     required: true
   },
   items: [itemSchema],
-  totalAmountBeforeGST: {
+  subtotal: {
     type: Number,
     required: true
   },
@@ -62,22 +59,45 @@ const procurementBillSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  uploadedBy: {
+  requestedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  uploadDate: {
-    type: Date,
-    default: Date.now
+  approvedByMD: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
-  billFileUrl: {
+  approvedAt: {
+    type: Date
+  },
+  paidBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  paidAt: {
+    type: Date
+  },
+  paymentMode: {
     type: String,
-    required: true
+    enum: ['upi', 'cash', 'bank-transfer']
+  },
+  status: {
+    type: String,
+    enum: [
+      'pending_md_approval',
+      'md_approved',
+      'rejected',
+      'pending_payment',
+      'paid'
+    ],
+    default: 'pending_md_approval'
   },
   remarks: {
     type: String
   }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('ProcurementBill', procurementBillSchema);
+module.exports = mongoose.model('ProcurementOrder', procurementOrderSchema);

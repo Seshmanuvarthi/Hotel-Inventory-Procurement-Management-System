@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import DashboardCard from '../components/DashboardCard';
 import PrimaryButton from '../components/PrimaryButton';
-import { UserPlus, Trash2, ChefHat } from 'lucide-react';
+import { UserPlus, Trash2, ChefHat, Truck } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ const SuperAdminDashboard = () => {
           <p className="text-accent">Manage your hotel operations with precision</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto">
           <DashboardCard
             title="User Management"
             value="Add Users & Hotels"
@@ -71,13 +71,20 @@ const SuperAdminDashboard = () => {
 
         <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
           <h3 className="text-xl font-semibold text-text-dark mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             <button
               onClick={() => navigate('/add-user-or-hotel')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center"
             >
               <UserPlus className="w-8 h-8 text-secondary mx-auto mb-2" />
               <span className="text-sm font-medium text-text-dark">Add User/Hotel</span>
+            </button>
+            <button
+              onClick={() => navigate('/users-list')}
+              className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center"
+            >
+              <UserPlus className="w-8 h-8 text-secondary mx-auto mb-2" />
+              <span className="text-sm font-medium text-text-dark">View Users</span>
             </button>
             <button
               onClick={() => navigate('/add-item')}
@@ -99,6 +106,13 @@ const SuperAdminDashboard = () => {
             >
               <ChefHat className="w-8 h-8 text-secondary mx-auto mb-2" />
               <span className="text-sm font-medium text-text-dark">Add Recipe</span>
+            </button>
+            <button
+              onClick={() => navigate('/add-vendor')}
+              className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center"
+            >
+              <Truck className="w-8 h-8 text-secondary mx-auto mb-2" />
+              <span className="text-sm font-medium text-text-dark">Add Vendor</span>
             </button>
           </div>
         </div>

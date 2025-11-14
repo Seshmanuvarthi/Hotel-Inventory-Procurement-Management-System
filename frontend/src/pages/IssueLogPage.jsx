@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import StyledTable from '../components/StyledTable';
+import PrimaryButton from '../components/PrimaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const IssueLogPage = () => {
-  const navigate = useNavigate();
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     fetchIssueLogs();
@@ -36,153 +39,158 @@ const IssueLogPage = () => {
 
   const showDetails = (issue) => {
     setSelectedIssue(issue);
+    setShowModal(true);
   };
 
   const closeModal = () => {
     setSelectedIssue(null);
+    setShowModal(false);
   };
+
+  const tableHeaders = ['Issue Number', 'Hotel', 'Date Issued', 'Items Count', 'Actions'];
+  const tableData = issues.map((issue) => [
+    issue.issueNumber,
+    issue.hotelId?.name || 'Unknown Hotel',
+    formatDate(issue.dateIssued),
+    issue.items?.length || 0,
+    <PrimaryButton
+      key={issue._id}
+      onClick={() => showDetails(issue)}
+      className="px-3 py-1 text-sm"
+    >
+      View Details
+    </PrimaryButton>
+  ]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
+      <Layout title="Issue Logs" userRole={user.role}>
+        <div className="flex justify-center items-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-accent">Loading issue logs...</p>
+          </div>
+        </div>
+      </Layout>
     );
   }
 
+  const totalIssues = issues.length;
+  const totalItemsIssued = issues.reduce((sum, issue) => sum + (issue.items?.length || 0), 0);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Issue Logs</h2>
-          <button
-            onClick={() => navigate('/store-dashboard')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Dashboard
-          </button>
+    <Layout title="Issue Logs" userRole={user.role}>
+      <div className="space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text-dark mb-2">Issue Logs</h2>
+          <p className="text-accent">Track all stock issuances and distribution history</p>
         </div>
 
-        {message && (
-          <div className="mb-4 text-center text-sm text-red-600">
-            {message}
-          </div>
-        )}
+        <div className="max-w-7xl mx-auto">
+          {message && (
+            <div className="mb-6 text-center p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              {message}
+            </div>
+          )}
 
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Issue Number
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hotel
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date Issued
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Items Count
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {issues.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    No issue logs found
-                  </td>
-                </tr>
-              ) : (
-                issues.map((issue) => (
-                  <tr key={issue._id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {issue.issueNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {issue.hotelId?.name || 'Unknown Hotel'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(issue.dateIssued)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {issue.items?.length || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => showDetails(issue)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-primary mb-2">{totalIssues}</div>
+                <p className="text-sm text-accent">Total Issues</p>
+              </div>
+            </div>
+            <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-secondary mb-2">{totalItemsIssued}</div>
+                <p className="text-sm text-accent">Items Issued</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10">
+            <h3 className="text-xl font-semibold text-text-dark mb-6">Stock Issuance History</h3>
+
+            {issues.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📋</div>
+                <p className="text-xl text-secondary font-medium mb-2">No issue logs found</p>
+                <p className="text-accent">Stock issuance records will appear here once items are issued to hotels.</p>
+              </div>
+            ) : (
+              <StyledTable
+                headers={tableHeaders}
+                data={tableData}
+              />
+            )}
+          </div>
         </div>
 
         {/* Modal for Issue Details */}
-        {selectedIssue && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
+        {showModal && selectedIssue && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-xl shadow-luxury max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-secondary/10">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-semibold text-text-dark">
                     Issue Details - {selectedIssue.issueNumber}
                   </h3>
                   <button
                     onClick={closeModal}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-accent hover:text-text-dark text-2xl leading-none"
                   >
-                    <span className="text-2xl">&times;</span>
+                    ×
                   </button>
                 </div>
 
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
-                    <strong>Hotel:</strong> {selectedIssue.hotelId?.name} - {selectedIssue.hotelId?.location}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>Date Issued:</strong> {formatDate(selectedIssue.dateIssued)}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>Issued By:</strong> {selectedIssue.issuedBy?.name || 'Unknown'}
-                  </p>
-                  {selectedIssue.approvedBy && (
-                    <p className="text-sm text-gray-600">
-                      <strong>Approved By:</strong> {selectedIssue.approvedBy?.name || 'Unknown'}
-                    </p>
-                  )}
+                <div className="space-y-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-secondary/5 p-3 rounded-lg">
+                      <p className="text-sm text-accent font-medium">Hotel</p>
+                      <p className="text-text-dark">{selectedIssue.hotelId?.name} - {selectedIssue.hotelId?.location}</p>
+                    </div>
+                    <div className="bg-secondary/5 p-3 rounded-lg">
+                      <p className="text-sm text-accent font-medium">Date Issued</p>
+                      <p className="text-text-dark">{formatDate(selectedIssue.dateIssued)}</p>
+                    </div>
+                    <div className="bg-secondary/5 p-3 rounded-lg">
+                      <p className="text-sm text-accent font-medium">Issued By</p>
+                      <p className="text-text-dark">{selectedIssue.issuedBy?.name || 'Unknown'}</p>
+                    </div>
+                    {selectedIssue.approvedBy && (
+                      <div className="bg-secondary/5 p-3 rounded-lg">
+                        <p className="text-sm text-accent font-medium">Approved By</p>
+                        <p className="text-text-dark">{selectedIssue.approvedBy?.name || 'Unknown'}</p>
+                      </div>
+                    )}
+                  </div>
                   {selectedIssue.remarks && (
-                    <p className="text-sm text-gray-600">
-                      <strong>Remarks:</strong> {selectedIssue.remarks}
-                    </p>
+                    <div className="bg-secondary/5 p-3 rounded-lg">
+                      <p className="text-sm text-accent font-medium">Remarks</p>
+                      <p className="text-text-dark">{selectedIssue.remarks}</p>
+                    </div>
                   )}
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Items Issued</h4>
-                  <div className="space-y-2">
+                <div className="border-t border-secondary/20 pt-6">
+                  <h4 className="text-lg font-semibold text-text-dark mb-4">Items Issued</h4>
+                  <div className="space-y-3">
                     {selectedIssue.items?.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {item.itemId?.name || 'Unknown Item'}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Quantity Issued: {item.quantityIssued} {item.unit}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-600">
-                            Stock After Issue: {item.previousStockAfterIssue}
-                          </p>
+                      <div key={index} className="bg-secondary/5 p-4 rounded-lg border border-secondary/10">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-text-dark">
+                              {item.itemId?.name || 'Unknown Item'}
+                            </p>
+                            <p className="text-sm text-accent">
+                              Quantity Issued: {item.quantityIssued} {item.unit}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-accent">
+                              Stock After Issue: {item.previousStockAfterIssue}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -192,8 +200,19 @@ const IssueLogPage = () => {
             </div>
           </div>
         )}
+
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-6 border border-secondary/20">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-text-dark mb-2">Issue Log Guidelines</h3>
+            <p className="text-sm text-accent">
+              Review stock issuance history to track distribution patterns and maintain accurate inventory records.
+              Use the detailed view to verify quantities and ensure proper documentation.
+              All stock movements are logged for audit and compliance purposes.
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
