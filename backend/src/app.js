@@ -52,20 +52,10 @@ app.use('/consumption', consumptionRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportsRoutes);
 
-// Serve static files from the React app build directory
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../public')));
-
-  // Catch all handler: send back React's index.html file for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-  });
-} else {
-  // Basic route for development
-  app.get('/', (req, res) => {
-    res.send('Backend is running');
-  });
-}
+// Basic route
+app.get('/', (req, res) => {
+  res.send('Backend is running');
+});
 
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/restaurant_erp';
