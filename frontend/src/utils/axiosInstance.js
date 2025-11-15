@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5050',
+  baseURL: process.env.REACT_APP_API_URL || 'https://hotel-inventory-procurement-management.onrender.com',
 });
 
 // Request interceptor to add token
