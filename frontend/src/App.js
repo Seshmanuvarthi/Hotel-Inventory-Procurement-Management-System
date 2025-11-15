@@ -12,6 +12,7 @@ import EditItemPage from './pages/EditItemPage';
 import DisableItemPage from './pages/DisableItemPage';
 import RecipeDashboard from './pages/RecipeDashboard';
 import AddRecipePage from './pages/AddRecipePage';
+import EditRecipePage from './pages/EditRecipePage';
 import AddVendorPage from './pages/AddVendorPage';
 import StoreManagerDashboard from './pages/StoreManagerDashboard';
 import IssueStockPage from './pages/IssueStockPage';
@@ -128,6 +129,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['superadmin', 'procurement_officer']}>
               <AddRecipePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-recipe/:id"
+          element={
+            <ProtectedRoute allowedRoles={['superadmin', 'procurement_officer']}>
+              <EditRecipePage />
             </ProtectedRoute>
           }
         />

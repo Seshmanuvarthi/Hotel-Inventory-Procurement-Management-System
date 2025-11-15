@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const hotelRoutes = require('./routes/hotelRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -19,9 +20,20 @@ const reportsRoutes = require('./routes/reportsRoutes');
 
 const app = express();
 
+// Trust proxy for production deployments
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL || false
+    : true,
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/auth', authRoutes);
@@ -40,10 +52,20 @@ app.use('/consumption', consumptionRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportsRoutes);
 
-// Basic route
-app.get('/', (req, res) => {
-  res.send('Backend is running');
-});
+// Serve static files from the React app build directory
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../public')));
+
+  // Catch all handler: send back React's index.html file for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+} else {
+  // Basic route for development
+  app.get('/', (req, res) => {
+    res.send('Backend is running');
+  });
+}
 
 // Connect to MongoDB
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/restaurant_erp';
@@ -52,6 +74,9 @@ mongoose.connect(mongoUri, {
   useUnifiedTopology: true,
 })
 .then(() => console.log('MongoDB connected'))
-.catch(err => console.log(err));
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
+});
 
 module.exports = app;

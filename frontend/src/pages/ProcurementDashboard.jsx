@@ -30,7 +30,7 @@ const ProcurementDashboard = () => {
                 onClick={() => navigate('/create-procurement-order')}
                 className="w-full"
               >
-                Create Order
+                Create New Order
               </PrimaryButton>
             </div>
           </DashboardCard>

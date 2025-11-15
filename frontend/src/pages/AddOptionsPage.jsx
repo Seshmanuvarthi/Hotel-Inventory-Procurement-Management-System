@@ -15,6 +15,7 @@ const AddOptionsPage = () => {
     { label: 'Add Procurement Officer', type: 'procurement_officer', icon: Truck, description: 'Manage procurement operations' },
     { label: 'Add Store Manager', type: 'store_manager', icon: Package, description: 'Oversee store operations' },
     { label: 'Add Accounts User', type: 'accounts', icon: Calculator, description: 'Handle financial operations' },
+    {label:'Add Vendor',type:'vendor',icon:UserPlus,description:'Add new vendor to the system'},
   ];
 
   return (

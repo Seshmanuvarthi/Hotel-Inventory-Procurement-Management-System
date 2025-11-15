@@ -12,7 +12,8 @@ import {
   Receipt,
   TrendingUp,
   Menu,
-  X
+  X,
+  ShoppingBag
 } from 'lucide-react';
 
 const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => {
@@ -32,10 +33,8 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
     ],
     procurement_officer: [
       { icon: Home, label: 'Dashboard', path: '/procurement-dashboard' },
-      { icon: ShoppingCart, label: 'Create Request', path: '/create-procurement-request' },
-      { icon: FileText, label: 'View Requests', path: '/procurement-requests' },
-      { icon: Receipt, label: 'Upload Bill', path: '/upload-bill' },
-      { icon: FileText, label: 'Bills List', path: '/bills' },
+      { icon: ShoppingCart, label: 'Purchase Orders', path: '/procurement-orders' },
+      { icon: ShoppingBag, label: 'New Orders', path: '/create-procurement-order' },
     ],
     hotel_manager: [
       { icon: Home, label: 'Dashboard', path: '/hotel-dashboard' },

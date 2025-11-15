@@ -73,13 +73,6 @@ const SuperAdminDashboard = () => {
           <h3 className="text-xl font-semibold text-text-dark mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             <button
-              onClick={() => navigate('/add-user-or-hotel')}
-              className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center"
-            >
-              <UserPlus className="w-8 h-8 text-secondary mx-auto mb-2" />
-              <span className="text-sm font-medium text-text-dark">Add User/Hotel</span>
-            </button>
-            <button
               onClick={() => navigate('/users-list')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center"
             >

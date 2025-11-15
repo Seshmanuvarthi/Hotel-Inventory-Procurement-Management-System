@@ -17,7 +17,7 @@ const UserListPage = () => {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const roles = ['all', 'superadmin', 'md', 'procurement_officer', 'store_manager', 'hotel_manager', 'accounts'];
+  const roles = ['all', 'superadmin', 'md', 'procurement_officer', 'store_manager', 'hotel_manager', 'accounts','vendor'];
 
   useEffect(() => {
     fetchUsers();
@@ -97,41 +97,49 @@ const UserListPage = () => {
     return matchesSearch && matchesRole && matchesHotel;
   });
 
-  const tableHeaders = ['Name', 'Email', 'Role', 'Hotel', 'Status', 'Created At', 'Actions'];
+  const tableHeaders = ['Name', 'Email', 'Role/Type', 'Hotel', 'Status', 'Created At', 'Actions'];
 
   const tableData = filteredUsers.map(user => [
     user?.name || 'N/A',
     user?.email || 'N/A',
-    user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
-    getHotelName(user?.hotelId),
-    user?.isActive ? 'Active' : 'Disabled',
+    user?.type === 'vendor'
+      ? 'Vendor'
+      : user?.role ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A',
+    user?.type === 'vendor' ? 'N/A' : getHotelName(user?.hotelId),
+    user?.type === 'vendor' ? 'Active' : (user?.isActive ? 'Active' : 'Disabled'),
     user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A',
-    <div key={user?._id || Math.random()} className="flex space-x-2">
-      <SecondaryButton
-        onClick={() => handleDisableUser(user?._id)}
-        className="px-2 py-1 text-xs"
-        disabled={!user?.isActive}
-      >
-        {user?.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-      </SecondaryButton>
-      <select
-        onChange={(e) => handleChangeRole(user?._id, e.target.value)}
-        value={user?.role || ''}
-        className="px-2 py-1 text-xs border rounded"
-      >
-        {roles.slice(1).map(role => (
-          <option key={role} value={role}>
-            {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-          </option>
-        ))}
-      </select>
-      <SecondaryButton
-        onClick={() => handleDeleteUser(user?._id)}
-        className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600"
-      >
-        <Trash2 className="w-4 h-4" />
-      </SecondaryButton>
-    </div>
+    user?.type === 'vendor' ? (
+      <div key={user?._id || Math.random()} className="text-center text-gray-500">
+        No actions available
+      </div>
+    ) : (
+      <div key={user?._id || Math.random()} className="flex space-x-2">
+        <SecondaryButton
+          onClick={() => handleDisableUser(user?._id)}
+          className="px-2 py-1 text-xs"
+          disabled={!user?.isActive}
+        >
+          {user?.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </SecondaryButton>
+        <select
+          onChange={(e) => handleChangeRole(user?._id, e.target.value)}
+          value={user?.role || ''}
+          className="px-2 py-1 text-xs border rounded"
+        >
+          {roles.slice(1).map(role => (
+            <option key={role} value={role}>
+              {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </option>
+          ))}
+        </select>
+        <SecondaryButton
+          onClick={() => handleDeleteUser(user?._id)}
+          className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600"
+        >
+          <Trash2 className="w-4 h-4" />
+        </SecondaryButton>
+      </div>
+    )
   ]);
 
   if (loading) {
@@ -212,9 +220,9 @@ const UserListPage = () => {
 
           {/* Stats */}
           <div className="flex gap-4 text-sm text-text-dark/60">
-            <span>Total Users: {users.length}</span>
+            <span>Total Users & Vendors: {users.length}</span>
             <span>Filtered: {filteredUsers.length}</span>
-            <span>Active: {filteredUsers.filter(u => u.isActive).length}</span>
+            <span>Active: {filteredUsers.filter(u => u.type === 'vendor' || u.isActive).length}</span>
           </div>
         </div>
 

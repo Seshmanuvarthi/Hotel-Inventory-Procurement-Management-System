@@ -21,7 +21,7 @@ const EditItemPage = () => {
 
   useEffect(() => {
     fetchItem();
-  }, [id]);
+  }, [fetchItem]);
 
   const fetchItem = async () => {
     try {
