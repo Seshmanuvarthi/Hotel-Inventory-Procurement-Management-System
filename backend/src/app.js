@@ -18,6 +18,12 @@ const consumptionRoutes = require('./routes/consumptionRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const reportsRoutes = require('./routes/reportsRoutes');
 
+// Initialize Cloudinary configuration
+const cloudinary = require('cloudinary').v2;
+require('dotenv').config();
+
+// Cloudinary configuration will be handled in controllers that need it
+
 const app = express();
 
 // Trust proxy for production deployments
@@ -27,11 +33,30 @@ if (process.env.NODE_ENV === 'production') {
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? (process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['https://hotel-inventory-procurement-management-sr7u.onrender.com'])
-    : true,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'https://hotel-inventory-procurement-management-sr7u.onrender.com',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001', // In case React runs on alternative port
+      'http://127.0.0.1:3001'
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

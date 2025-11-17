@@ -145,7 +145,7 @@ const CreateProcurementOrder = () => {
       return;
     }
 
-    if (!formData.vendorName || !formData.billNumber || !formData.billDate) {
+    if (!formData.vendorName || !formData.billDate) {
       setMessage('Please fill in all required fields');
       return;
     }
@@ -203,12 +203,11 @@ const CreateProcurementOrder = () => {
                 </div>
 
                 <StyledForm.Input
-                  label="Bill Number"
+                  label="Bill Number (Optional)"
                   type="text"
                   value={formData.billNumber}
                   onChange={(e) => setFormData(prev => ({ ...prev, billNumber: e.target.value }))}
-                  placeholder="Enter bill number"
-                  required
+                  placeholder="Enter bill number if available"
                 />
 
                 <StyledForm.Input

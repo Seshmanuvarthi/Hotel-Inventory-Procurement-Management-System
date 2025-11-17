@@ -33,7 +33,7 @@ const AddOptionsPage = () => {
             <div
               key={option.type}
               className="bg-card rounded-xl p-6 shadow-luxury border border-secondary/10 hover:shadow-luxury-lg transition-all duration-300 hover:scale-105 cursor-pointer"
-              onClick={() => navigate(`/add-user-or-hotel?type=${option.type}`)}
+              onClick={() => option.type === 'vendor' ? navigate('/add-vendor') : navigate(`/add-user-or-hotel?type=${option.type}`)}
             >
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="p-4 bg-primary/10 rounded-full">
@@ -47,7 +47,11 @@ const AddOptionsPage = () => {
                   className="w-full mt-2"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/add-user-or-hotel?type=${option.type}`);
+                    if (option.type === 'vendor') {
+                      navigate('/add-vendor');
+                    } else {
+                      navigate(`/add-user-or-hotel?type=${option.type}`);
+                    }
                   }}
                 >
                   Add {option.label.replace('Add ', '')}

@@ -21,9 +21,9 @@ const PendingPaymentsPage = () => {
           _id: order._id,
           vendorName: order.vendorName,
           billNumber: order.billNumber,
-          finalAmount: order.finalAmount,
+          finalAmount: order.calculatedAmount || order.finalAmount,
           totalPaid: 0, // Since payment is pending, total paid is 0
-          pending: order.finalAmount,
+          pending: order.calculatedAmount || order.finalAmount,
           billDate: order.billDate,
           requestedBy: order.requestedBy?.name || 'Unknown'
         }));

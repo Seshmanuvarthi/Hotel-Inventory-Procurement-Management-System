@@ -1,140 +1,103 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const UploadBillPage = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // procurementRequestId
-  const [request, setRequest] = useState(null);
-  const [vendors, setVendors] = useState([]);
+  const { id } = useParams(); // procurementOrderId
+  const [order, setOrder] = useState(null);
   const [billData, setBillData] = useState({
-    vendorName: '',
-    billNumber: '',
+    receivedItems: [],
     billDate: '',
-    gstPercentage: 5,
-    billFileUrl: '',
     remarks: '',
-    items: []
+    billImage: null
   });
+  const [itemStatuses, setItemStatuses] = useState({});
   const [loading, setLoading] = useState(true);
-  const [loadingVendors, setLoadingVendors] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchOrder = async () => {
       if (!id) {
-        setMessage('Procurement request ID is required');
+        setMessage('Procurement order ID is required');
         setLoading(false);
-        setLoadingVendors(false);
         return;
       }
 
       try {
-        // Fetch vendors
-        const vendorsResponse = await axiosInstance.get('/vendors');
-        setVendors(vendorsResponse.data);
-      } catch (error) {
-        console.error('Error fetching vendors:', error);
-      } finally {
-        setLoadingVendors(false);
-      }
+        const response = await axiosInstance.get(`/procurement-orders/${id}`);
+        setOrder(response.data);
 
-      try {
-        console.log('Fetching request details for ID:', id);
-        const response = await axiosInstance.get(`/procurement/${id}`);
-        console.log('Response received:', response.data);
-
-        if (!response.data || !response.data.items || !Array.isArray(response.data.items)) {
-          throw new Error('Invalid response structure: missing or invalid items array');
-        }
-
-        setRequest(response.data);
-
-        const prefilledItems = response.data.items.map(item => {
-          if (!item.itemId || !item.itemId._id) {
-            throw new Error('Invalid item structure: missing itemId');
+        // Initialize item statuses - all approved items start as pending
+        const initialStatuses = {};
+        response.data.items.forEach((item, index) => {
+          if (item.mdApprovalStatus === 'approved') {
+            initialStatuses[index] = {
+              status: 'pending',
+              quantity: item.quantity
+            };
           }
-          return {
-            itemId: item.itemId._id,
-            quantity: item.quantity || 0,
-            unit: item.unit || '',
-            pricePerUnit: item.pricePerUnit || 0,
-            gstApplicable: item.gstApplicable || false,
-            gstAmount: 0,
-            totalAmount: (item.quantity || 0) * (item.pricePerUnit || 0)
-          };
         });
-
-        setBillData(prev => ({
-          ...prev,
-          vendorName: response.data.items[0]?.vendorName || '',
-          items: prefilledItems
-        }));
+        setItemStatuses(initialStatuses);
       } catch (error) {
-        console.error('Error fetching request details:', error);
-        setMessage('Error fetching request details: ' + (error.message || 'Unknown error'));
+        console.error('Error fetching order details:', error);
+        setMessage('Error fetching order details: ' + (error.response?.data?.message || error.message));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchOrder();
   }, [id]);
   
 
-  const handleItemChange = (index, field, value) => {
-    const updatedItems = [...billData.items];
-    updatedItems[index][field] = value;
-
-    // Recalculate GST and totalAmount
-    if (field === 'pricePerUnit' || field === 'gstApplicable') {
-      const quantity = parseFloat(updatedItems[index].quantity) || 0;
-      const pricePerUnit = parseFloat(updatedItems[index].pricePerUnit) || 0;
-      const gstPercentage = parseFloat(billData.gstPercentage) || 0;
-
-      if (updatedItems[index].gstApplicable) {
-        updatedItems[index].gstAmount = quantity * pricePerUnit * (gstPercentage / 100);
-      } else {
-        updatedItems[index].gstAmount = 0;
-      }
-
-      updatedItems[index].totalAmount = quantity * pricePerUnit + updatedItems[index].gstAmount;
-    }
-
-    setBillData(prev => ({
+  const handleItemStatusChange = (index, status) => {
+    setItemStatuses(prev => ({
       ...prev,
-      items: updatedItems
+      [index]: {
+        ...prev[index],
+        status
+      }
     }));
   };
 
-  const handleGSTPercentageChange = (value) => {
-    const gstPercentage = parseFloat(value) || 0;
-    setBillData(prev => ({ ...prev, gstPercentage }));
-
-    // Recalculate all GST amounts
-    const updatedItems = billData.items.map(item => {
-      const quantity = parseFloat(item.quantity) || 0;
-      const pricePerUnit = parseFloat(item.pricePerUnit) || 0;
-
-      if (item.gstApplicable) {
-        item.gstAmount = quantity * pricePerUnit * (gstPercentage / 100);
-      } else {
-        item.gstAmount = 0;
+  const handleQuantityChange = (index, quantity) => {
+    setItemStatuses(prev => ({
+      ...prev,
+      [index]: {
+        ...prev[index],
+        quantity: parseFloat(quantity) || 0
       }
+    }));
+  };
 
-      item.totalAmount = quantity * pricePerUnit + item.gstAmount;
-      return item;
-    });
-
-    setBillData(prev => ({ ...prev, items: updatedItems }));
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBillData(prev => ({ ...prev, billImage: file }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!billData.vendorName || !billData.billDate || !billData.billFileUrl) {
-      setMessage('Please fill all required fields');
+    if (!billData.billDate) {
+      setMessage('Please select bill date');
+      return;
+    }
+
+    // Check if at least one item has been processed
+    const processedItems = Object.values(itemStatuses).filter(item =>
+      item.status !== 'pending'
+    );
+
+    if (processedItems.length === 0) {
+      setMessage('Please update the status for at least one item');
       return;
     }
 
@@ -142,15 +105,32 @@ const UploadBillPage = () => {
     setMessage('');
 
     try {
-      const payload = {
-        ...billData,
-        billDate: new Date(billData.billDate).toISOString()
-      };
+      const formData = new FormData();
 
-      await axiosInstance.post(`/procurement/${id}/bill`, payload);
+      // Prepare received items data
+      const receivedItemsData = Object.entries(itemStatuses).map(([index, data]) => ({
+        index: parseInt(index),
+        status: data.status,
+        quantity: data.quantity
+      }));
+
+      formData.append('receivedItems', JSON.stringify(receivedItemsData));
+      formData.append('billDate', billData.billDate);
+      formData.append('remarks', billData.remarks);
+
+      if (billData.billImage) {
+        formData.append('billImage', billData.billImage);
+      }
+
+      await axiosInstance.post(`/procurement-orders/${id}/upload-bill`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       setMessage('Bill uploaded successfully!');
       setTimeout(() => {
-        navigate('/bills');
+        navigate('/store-dashboard');
       }, 2000);
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error uploading bill');
@@ -161,79 +141,45 @@ const UploadBillPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-xl">Loading...</div>
+        </div>
+      </Layout>
     );
   }
 
-  if (!request) {
+  if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-red-600">Request not found</div>
-      </div>
+      <Layout>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-xl text-red-600">Order not found</div>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <Layout>
+      <div className="max-w-4xl mx-auto py-8">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Upload Bill</h2>
-          <button
-            onClick={() => navigate('/bills')}
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Back to Bills
-          </button>
+          <h2 className="text-3xl font-bold text-text-dark">Upload Bill</h2>
+          <SecondaryButton onClick={() => navigate('/store-dashboard')}>
+            Back to Dashboard
+          </SecondaryButton>
         </div>
 
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h3 className="text-lg font-medium text-blue-900 mb-2">Procurement Request Details</h3>
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-lg font-medium text-blue-900 mb-2">Procurement Order Details</h3>
           <p className="text-sm text-blue-700">
-            <strong>Request ID:</strong> {request._id.slice(-8)} | <strong>Status:</strong> {request.status} | <strong>Requested By:</strong> {request.requestedBy?.name}
+            <strong>Order ID:</strong> {order._id.slice(-8)} | <strong>Status:</strong> {order.status} | <strong>Bill Number:</strong> {order.billNumber || 'N/A'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="vendorName" className="block text-sm font-medium text-gray-700">
-                Vendor Name *
-              </label>
-              {loadingVendors ? (
-                <div className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500">
-                  Loading vendors...
-                </div>
-              ) : (
-                <select
-                  id="vendorName"
-                  value={billData.vendorName}
-                  onChange={(e) => setBillData(prev => ({ ...prev, vendorName: e.target.value }))}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  required
-                >
-                  <option value="">Select Vendor</option>
-                  {vendors.map(vendor => (
-                    <option key={vendor._id} value={vendor.name}>{vendor.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <label htmlFor="billNumber" className="block text-sm font-medium text-gray-700">
-                Bill Number
-              </label>
-              <input
-                type="text"
-                id="billNumber"
-                value={billData.billNumber}
-                onChange={(e) => setBillData(prev => ({ ...prev, billNumber: e.target.value }))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="billDate" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="billDate" className="block text-sm font-medium text-text-dark mb-1">
                 Bill Date *
               </label>
               <input
@@ -241,114 +187,84 @@ const UploadBillPage = () => {
                 id="billDate"
                 value={billData.billDate}
                 onChange={(e) => setBillData(prev => ({ ...prev, billDate: e.target.value }))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 required
               />
             </div>
             <div>
-              <label htmlFor="gstPercentage" className="block text-sm font-medium text-gray-700">
-                GST Percentage *
+              <label htmlFor="billImage" className="block text-sm font-medium text-text-dark mb-1">
+                Bill Image
               </label>
               <input
-                type="number"
-                step="0.01"
-                id="gstPercentage"
-                value={billData.gstPercentage}
-                onChange={(e) => handleGSTPercentageChange(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="5"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="billFileUrl" className="block text-sm font-medium text-gray-700">
-                Bill File URL *
-              </label>
-              <input
-                type="url"
-                id="billFileUrl"
-                value={billData.billFileUrl}
-                onChange={(e) => setBillData(prev => ({ ...prev, billFileUrl: e.target.value }))}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="https://example.com/bill.pdf"
+                type="file"
+                id="billImage"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full px-3 py-2 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 required
               />
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Items</h3>
+            <h3 className="text-lg font-medium text-text-dark mb-4">Items Received</h3>
             <div className="space-y-4">
-              {billData.items.map((item, index) => (
-                <div key={index} className="p-4 border border-gray-200 rounded-md">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {order.items.map((item, index) => (
+                <div key={index} className="p-4 border border-secondary/20 rounded-lg bg-card">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Item</label>
-                      <input
-                        type="text"
-                        value={request.items[index]?.itemId?.name || 'Unknown Item'}
-                        readOnly
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                      />
+                      <label className="block text-sm font-medium text-text-dark">Item</label>
+                      <p className="text-sm text-text-secondary">{item.itemId?.name || 'Unknown Item'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Quantity</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.quantity}
-                        readOnly
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                      />
+                      <label className="block text-sm font-medium text-text-dark">Ordered Qty</label>
+                      <p className="text-sm text-text-secondary">{item.quantity} {item.unit}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Unit</label>
-                      <input
-                        type="text"
-                        value={item.unit}
-                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                      />
+                      <label className="block text-sm font-medium text-text-dark">Price per Unit</label>
+                      <p className="text-sm text-text-secondary">₹{item.pricePerUnit}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Price per Unit</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.pricePerUnit}
-                        onChange={(e) => handleItemChange(index, 'pricePerUnit', parseFloat(e.target.value) || 0)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        required
-                      />
+                      <label className="block text-sm font-medium text-text-dark">MD Approval</label>
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        item.mdApprovalStatus === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {item.mdApprovalStatus}
+                      </span>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">GST Applicable</label>
-                      <input
-                        type="checkbox"
-                        checked={item.gstApplicable}
-                        onChange={(e) => handleItemChange(index, 'gstApplicable', e.target.checked)}
-                        className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">GST Amount</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.gstAmount.toFixed(2)}
-                        readOnly
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                      />
-                    </div>
-                    <div className="md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700">Total Amount</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.totalAmount.toFixed(2)}
-                        readOnly
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50"
-                      />
+                      <label className="block text-sm font-medium text-text-dark mb-2">Received Status</label>
+                      {item.mdApprovalStatus === 'approved' ? (
+                        <div className="space-y-2">
+                          <select
+                            value={itemStatuses[index]?.status || 'pending'}
+                            onChange={(e) => handleItemStatusChange(index, e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-secondary/20 rounded focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            required
+                          >
+                            <option value="pending">Select Status</option>
+                            <option value="received">Received Complete</option>
+                            <option value="partial">Received Partial</option>
+                            <option value="not_received">Not Received</option>
+                          </select>
+                          {(itemStatuses[index]?.status === 'received' || itemStatuses[index]?.status === 'partial') && (
+                            <input
+                              type="number"
+                              placeholder="Received Qty"
+                              value={itemStatuses[index]?.quantity || ''}
+                              onChange={(e) => handleQuantityChange(index, e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-secondary/20 rounded focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">Not Approved</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -357,7 +273,7 @@ const UploadBillPage = () => {
           </div>
 
           <div>
-            <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="remarks" className="block text-sm font-medium text-text-dark mb-1">
               Remarks
             </label>
             <textarea
@@ -365,7 +281,7 @@ const UploadBillPage = () => {
               value={billData.remarks}
               onChange={(e) => setBillData(prev => ({ ...prev, remarks: e.target.value }))}
               rows={3}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary"
               placeholder="Optional remarks"
             />
           </div>
@@ -376,18 +292,17 @@ const UploadBillPage = () => {
             </div>
           )}
 
-          <div className="flex space-x-4">
-            <button
-              type="submit"
-              disabled={submitLoading}
-              className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-            >
+          <div className="flex justify-end space-x-4">
+            <SecondaryButton type="button" onClick={() => navigate('/store-dashboard')}>
+              Cancel
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={submitLoading}>
               {submitLoading ? 'Uploading...' : 'Upload Bill'}
-            </button>
+            </PrimaryButton>
           </div>
         </form>
       </div>
-    </div>
+    </Layout>
   );
 };
 

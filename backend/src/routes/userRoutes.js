@@ -8,14 +8,55 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 // GET /users - Get all users and vendors (superadmin only)
 router.get('/', authMiddleware, roleMiddleware(['superadmin']), async (req, res) => {
   try {
-    const users = await User.find({
+    const { search, role, type } = req.query;
+
+    // Build user query
+    let userQuery = {
       isActive: true,
       role: { $in: ['superadmin', 'md', 'procurement_officer', 'store_manager', 'hotel_manager', 'accounts'] }
-    }).select('-passwordHash');
+    };
 
-    const vendors = await Vendor.find({ isActive: true })
-      .select('name email phone contactPerson createdAt')
-      .lean();
+    // Build vendor query
+    let vendorQuery = { isActive: true };
+
+    // Apply search filter
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      userQuery.$or = [
+        { name: searchRegex },
+        { email: searchRegex }
+      ];
+      vendorQuery.$or = [
+        { name: searchRegex },
+        { email: searchRegex },
+        { contactPerson: searchRegex }
+      ];
+    }
+
+    // Apply role/type filter
+    if (role && role !== 'all') {
+      if (role === 'vendor') {
+        // If filtering for vendors, only fetch vendors
+        userQuery = null; // Don't fetch users
+      } else {
+        // Filter users by role
+        userQuery.role = role;
+        vendorQuery = null; // Don't fetch vendors
+      }
+    }
+
+    let users = [];
+    let vendors = [];
+
+    if (userQuery) {
+      users = await User.find(userQuery).select('-passwordHash');
+    }
+
+    if (vendorQuery) {
+      vendors = await Vendor.find(vendorQuery)
+        .select('name email phone contactPerson createdAt')
+        .lean();
+    }
 
     // Add a type field to distinguish users from vendors
     const usersWithType = users.map(user => ({ ...user.toObject(), type: 'user' }));

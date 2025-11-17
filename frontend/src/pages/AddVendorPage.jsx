@@ -224,7 +224,7 @@ const AddVendorPage = () => {
             <div className="flex justify-center space-x-4">
               <button
                 type="button"
-                onClick={() => navigate('/super-admin-dashboard')}
+                onClick={() => navigate('/superadmin-add-options')}
                 className="px-6 py-3 border border-secondary text-secondary rounded-lg hover:bg-secondary hover:text-white transition-colors duration-200"
               >
                 Cancel

@@ -17,6 +17,8 @@ const MDApprovalDashboard = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [remarks, setRemarks] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [approvedItems, setApprovedItems] = useState([]);
+  const [rejectedItems, setRejectedItems] = useState([]);
 
   useEffect(() => {
     fetchPendingRequests();
@@ -45,10 +47,16 @@ const MDApprovalDashboard = () => {
   const handleApprove = async (requestId) => {
     setActionLoading(true);
     try {
-      await axiosInstance.patch(`/procurement-orders/${requestId}/approve`, { remarks });
+      await axiosInstance.patch(`/procurement-orders/${requestId}/approve`, {
+        approvedItems,
+        rejectedItems,
+        remarks
+      });
       setMessage('Request approved successfully!');
       setSelectedRequest(null);
       setRemarks('');
+      setApprovedItems([]);
+      setRejectedItems([]);
       fetchPendingRequests();
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error approving request');
@@ -64,6 +72,8 @@ const MDApprovalDashboard = () => {
       setMessage('Request rejected successfully!');
       setSelectedRequest(null);
       setRemarks('');
+      setApprovedItems([]);
+      setRejectedItems([]);
       fetchPendingRequests();
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error rejecting request');
@@ -75,11 +85,15 @@ const MDApprovalDashboard = () => {
   const openModal = (request) => {
     setSelectedRequest(request);
     setRemarks('');
+    setApprovedItems([]);
+    setRejectedItems([]);
   };
 
   const closeModal = () => {
     setSelectedRequest(null);
     setRemarks('');
+    setApprovedItems([]);
+    setRejectedItems([]);
   };
 
   const getTotalAmount = (items) => {
@@ -224,6 +238,34 @@ const MDApprovalDashboard = () => {
                               <p>Vendor: {item.vendorName}</p>
                               <p>Quantity: {item.quantity} {item.unit}</p>
                               <p>Price: ₹{item.pricePerUnit} per {item.unit}</p>
+                            </div>
+                            <div className="flex space-x-2 mt-2">
+                              <button
+                                onClick={() => {
+                                  setApprovedItems(prev => [...prev, index]);
+                                  setRejectedItems(prev => prev.filter(i => i !== index));
+                                }}
+                                className={`px-3 py-1 text-xs rounded ${
+                                  approvedItems.includes(index)
+                                    ? 'bg-green-100 text-green-800 border border-green-300'
+                                    : 'bg-white text-green-600 border border-green-300 hover:bg-green-50'
+                                }`}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setRejectedItems(prev => [...prev, index]);
+                                  setApprovedItems(prev => prev.filter(i => i !== index));
+                                }}
+                                className={`px-3 py-1 text-xs rounded ${
+                                  rejectedItems.includes(index)
+                                    ? 'bg-red-100 text-red-800 border border-red-300'
+                                    : 'bg-white text-red-600 border border-red-300 hover:bg-red-50'
+                                }`}
+                              >
+                                Reject
+                              </button>
                             </div>
                           </div>
                           <div className="text-right">

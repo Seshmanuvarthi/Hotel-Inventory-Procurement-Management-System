@@ -36,7 +36,7 @@ const LoginPage = () => {
           navigate('/accounts-dashboard');
           break;
         case 'md':
-          navigate('/md-reports-dashboard');
+          navigate('/md-approvals');
           break;
         default:
           navigate('/superadmin-dashboard');

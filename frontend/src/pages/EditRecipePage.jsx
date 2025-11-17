@@ -18,13 +18,18 @@ const EditRecipePage = () => {
   });
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const units = ["kg", "g", "litre", "ml", "piece", "packet", "dozen", "bottle", "can", "box"];
 
   const fetchRecipe = useCallback(async () => {
     try {
       const response = await axiosInstance.get(`/recipes/${id}`);
       setRecipe({
         dishName: response.data.dishName,
-        ingredients: response.data.ingredients || []
+        ingredients: (response.data.ingredients || []).map(ing => ({
+          itemId: ing.itemId,
+          quantity: ing.quantityRequired || ing.quantity || 0,
+          unit: ing.unit || ''
+        }))
       });
     } catch (error) {
       setError('Error fetching recipe');
@@ -37,7 +42,7 @@ const EditRecipePage = () => {
   const fetchItems = useCallback(async () => {
     try {
       const response = await axiosInstance.get('/items');
-      setItems(response.data?.data || []);
+      setItems(response.data || []);
     } catch (error) {
       console.error('Error fetching items:', error);
     }
@@ -51,7 +56,7 @@ const EditRecipePage = () => {
   const handleAddIngredient = () => {
     setRecipe(prev => ({
       ...prev,
-      ingredients: [...prev.ingredients, { itemId: '', quantity: 0 }]
+      ingredients: [...prev.ingredients, { itemId: '', quantity: 0, unit: '' }]
     }));
   };
 
@@ -77,7 +82,17 @@ const EditRecipePage = () => {
     setError('');
 
     try {
-      await axiosInstance.patch(`/recipes/${id}`, recipe);
+      // Transform ingredients to match backend expectation
+      const transformedRecipe = {
+        dishName: recipe.dishName,
+        ingredients: recipe.ingredients.map(ing => ({
+          itemId: ing.itemId,
+          quantityRequired: ing.quantity,
+          unit: ing.unit
+        }))
+      };
+
+      await axiosInstance.patch(`/recipes/${id}`, transformedRecipe);
       navigate('/recipe-dashboard');
     } catch (error) {
       setError(error.response?.data?.message || 'Error updating recipe');
@@ -179,6 +194,25 @@ const EditRecipePage = () => {
                             step="0.01"
                             required
                           />
+                        </div>
+
+                        <div className="w-32">
+                          <label className="block text-sm font-medium text-text-dark mb-1">
+                            Unit
+                          </label>
+                          <select
+                            value={ingredient.unit}
+                            onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
+                            className="w-full px-3 py-2 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                            required
+                          >
+                            <option value="">Select unit</option>
+                            {units.map(unit => (
+                              <option key={unit} value={unit}>
+                                {unit}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <div className="flex items-end">

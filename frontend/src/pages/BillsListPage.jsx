@@ -14,8 +14,12 @@ const BillsListPage = () => {
 
   const fetchBills = async () => {
     try {
-      const response = await axiosInstance.get('/procurement/bills');
-      setBills(response.data);
+      const response = await axiosInstance.get('/procurement-orders');
+      // Show all orders that have been processed (MD approved and beyond)
+      const processedOrders = response.data.filter(order =>
+        ['md_approved', 'pending_payment', 'paid'].includes(order.status)
+      );
+      setBills(processedOrders);
     } catch (error) {
       setMessage('Error fetching bills');
     } finally {
@@ -43,7 +47,7 @@ const BillsListPage = () => {
     <div className="min-h-screen bg-background py-6 sm:py-8 lg:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-text-dark">Procurement Bills</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-text-dark">Previous Orders</h2>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
             <button
               onClick={() => navigate('/upload-bill')}
@@ -126,21 +130,34 @@ const BillsListPage = () => {
                         {bill.billNumber || 'N/A'}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-text-dark">
-                        {formatDate(bill.billDate)}
+                        {bill.uploadDate ? formatDate(bill.uploadDate) : formatDate(bill.updatedAt)}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-text-dark">
-                        ₹{bill.finalAmount?.toFixed(2) || '0.00'}
+                        <div className="space-y-1">
+                          {bill.calculatedAmount ? (
+                            <>
+                              <div>₹{bill.calculatedAmount.toFixed(2)}</div>
+                              {bill.finalAmount && bill.finalAmount !== bill.calculatedAmount && (
+                                <div className="text-xs text-accent">
+                                  Vendor: ₹{bill.finalAmount.toFixed(2)}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div>₹{bill.finalAmount?.toFixed(2) || '0.00'}</div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
-                        {!bill.mdApproved ? (
-                          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                            Pending MD Approval
+                        {bill.status === 'md_approved' ? (
+                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            MD Approved
                           </span>
-                        ) : bill.paymentStatus === 'pending' ? (
+                        ) : bill.status === 'pending_payment' ? (
                           <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
                             Pending Payment
                           </span>
-                        ) : bill.paymentStatus === 'paid' ? (
+                        ) : bill.status === 'paid' ? (
                           <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                             Paid
                           </span>
@@ -155,7 +172,7 @@ const BillsListPage = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => navigate(`/bill/${bill._id}`)}
+                          onClick={() => navigate(`/procurement-orders/${bill._id}`)}
                           className="text-secondary hover:text-secondary/80 transition-colors duration-200"
                         >
                           View Details

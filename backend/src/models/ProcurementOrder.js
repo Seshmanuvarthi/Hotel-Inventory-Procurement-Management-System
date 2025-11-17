@@ -30,6 +30,20 @@ const itemSchema = new mongoose.Schema({
   totalAmount: {
     type: Number,
     required: true
+  },
+  mdApprovalStatus: {
+    type: String,
+    enum: ['approved', 'rejected'],
+    default: 'approved' // Default to approved for backward compatibility
+  },
+  receivedStatus: {
+    type: String,
+    enum: ['pending', 'received', 'partial', 'not_received'],
+    default: 'pending'
+  },
+  receivedQuantity: {
+    type: Number,
+    default: 0
   }
 });
 
@@ -40,11 +54,11 @@ const procurementOrderSchema = new mongoose.Schema({
   },
   billNumber: {
     type: String,
-    required: true
+    required: false // Initially null, becomes required after MD approval
   },
   billDate: {
     type: Date,
-    required: true
+    required: false
   },
   items: [itemSchema],
   subtotal: {
@@ -71,6 +85,16 @@ const procurementOrderSchema = new mongoose.Schema({
   approvedAt: {
     type: Date
   },
+  billImageUrl: {
+    type: String
+  },
+  billUploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  billUploadedAt: {
+    type: Date
+  },
   paidBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -87,6 +111,9 @@ const procurementOrderSchema = new mongoose.Schema({
     enum: [
       'pending_md_approval',
       'md_approved',
+      'bill_uploaded',
+      'pending_accounts_approval',
+      'accounts_approved',
       'rejected',
       'pending_payment',
       'paid'

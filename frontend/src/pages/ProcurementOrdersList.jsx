@@ -181,7 +181,14 @@ const ProcurementOrdersList = () => {
                         {formatDate(order.billDate)}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-text-dark">
-                        ₹{order.finalAmount?.toFixed(2) || '0.00'}
+                        <div className="space-y-1">
+                          <div>₹{order.finalAmount?.toFixed(2) || '0.00'}</div>
+                          {order.calculatedAmount && order.calculatedAmount !== order.finalAmount && (
+                            <div className="text-xs text-accent">
+                              Calc: ₹{order.calculatedAmount.toFixed(2)}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                         {getStatusBadge(order.status)}
@@ -191,7 +198,7 @@ const ProcurementOrdersList = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button
-                          onClick={() => navigate(`/procurement-order/${order._id}`)}
+                          onClick={() => navigate(`/procurement-orders/${order._id}`)}
                           className="text-secondary hover:text-secondary/80 transition-colors duration-200"
                         >
                           View

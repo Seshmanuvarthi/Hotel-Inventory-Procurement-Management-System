@@ -6,7 +6,9 @@ const {
   getProcurementOrderById,
   mdApproveOrder,
   mdRejectOrder,
-  markAsPaid
+  uploadBill,
+  markAsPaid,
+  upload
 } = require('../controllers/procurementOrderController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
@@ -14,17 +16,20 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 // Create procurement order - procurement_officer, superadmin
 router.post('/', authMiddleware, roleMiddleware(['procurement_officer', 'superadmin']), createProcurementOrder);
 
-// Get all procurement orders - procurement_officer, md, accounts, superadmin
-router.get('/', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getAllProcurementOrders);
+// Get all procurement orders - procurement_officer, md, accounts, store_manager, superadmin
+router.get('/', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'store_manager', 'superadmin']), getAllProcurementOrders);
 
-// Get procurement order by ID - procurement_officer, md, accounts, superadmin
-router.get('/:id', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'superadmin']), getProcurementOrderById);
+// Get procurement order by ID - procurement_officer, md, accounts, store_manager, superadmin
+router.get('/:id', authMiddleware, roleMiddleware(['procurement_officer', 'md', 'accounts', 'store_manager', 'superadmin']), getProcurementOrderById);
 
 // MD approve order - md, superadmin
 router.patch('/:id/approve', authMiddleware, roleMiddleware(['md', 'superadmin']), mdApproveOrder);
 
 // MD reject order - md, superadmin
 router.patch('/:id/reject', authMiddleware, roleMiddleware(['md', 'superadmin']), mdRejectOrder);
+
+// Upload bill - store_manager, superadmin
+router.post('/:id/upload-bill', authMiddleware, roleMiddleware(['store_manager', 'superadmin']), upload.single('billImage'), uploadBill);
 
 // Mark as paid - accounts, superadmin
 router.patch('/:id/pay', authMiddleware, roleMiddleware(['accounts', 'superadmin']), markAsPaid);

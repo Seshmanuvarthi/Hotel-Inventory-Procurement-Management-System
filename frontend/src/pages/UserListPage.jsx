@@ -21,12 +21,19 @@ const UserListPage = () => {
 
   useEffect(() => {
     fetchUsers();
+  }, [searchTerm, roleFilter]);
+
+  useEffect(() => {
     fetchHotels();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      const response = await axiosInstance.get('/users');
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (roleFilter !== 'all') params.append('role', roleFilter);
+
+      const response = await axiosInstance.get(`/users?${params.toString()}`);
       const userData = response.data?.data || [];
       setUsers(Array.isArray(userData) ? userData : []);
     } catch (err) {
@@ -90,11 +97,8 @@ const UserListPage = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesHotel = hotelFilter === 'all' || user.hotelId === hotelFilter;
-    return matchesSearch && matchesRole && matchesHotel;
+    return matchesHotel;
   });
 
   const tableHeaders = ['Name', 'Email', 'Role/Type', 'Hotel', 'Status', 'Created At', 'Actions'];

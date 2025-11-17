@@ -14,6 +14,8 @@ import RecipeDashboard from './pages/RecipeDashboard';
 import AddRecipePage from './pages/AddRecipePage';
 import EditRecipePage from './pages/EditRecipePage';
 import AddVendorPage from './pages/AddVendorPage';
+import UploadBillPage from './pages/UploadBillPage';
+import UploadBillListPage from './pages/UploadBillListPage';
 import StoreManagerDashboard from './pages/StoreManagerDashboard';
 import IssueStockPage from './pages/IssueStockPage';
 import StoreStockPage from './pages/StoreStockPage';
@@ -36,6 +38,7 @@ import PendingPaymentsPage from './pages/PendingPaymentsPage';
 import VendorLedger from './pages/VendorLedger';
 import PaymentSummary from './pages/PaymentSummary';
 import MDAnalyticsDashboard from './pages/MDAnalyticsDashboard';
+import BillsListPage from './pages/BillsListPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -181,6 +184,22 @@ function App() {
           }
         />
         <Route
+          path="/upload-bill-list"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'superadmin']}>
+              <UploadBillListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/upload-bill/:id"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'superadmin']}>
+              <UploadBillPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/procurement-dashboard"
           element={
             <ProtectedRoute allowedRoles={['procurement_officer']}>
@@ -201,6 +220,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['procurement_officer', 'md', 'accounts', 'superadmin']}>
               <ProcurementOrdersList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/procurement-orders/:id"
+          element={
+            <ProtectedRoute allowedRoles={['procurement_officer', 'md', 'accounts', 'superadmin']}>
+              <ProcurementRequestDetail />
             </ProtectedRoute>
           }
         />
@@ -279,7 +306,15 @@ function App() {
           }
         />
         <Route
-          path="/enter-payment"
+          path="/bills"
+          element={
+            <ProtectedRoute allowedRoles={['accounts', 'store_manager', 'superadmin', 'procurement_officer', 'md']}>
+              <BillsListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enter-payment/:id"
           element={
             <ProtectedRoute requiredRole="accounts">
               <EnterPaymentPage />

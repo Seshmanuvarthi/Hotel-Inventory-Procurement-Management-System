@@ -15,7 +15,7 @@ const ProcurementRequestDetail = () => {
 
   const fetchRequestDetail = async () => {
     try {
-      const response = await axiosInstance.get(`/procurement/${id}`);
+      const response = await axiosInstance.get(`/procurement-orders/${id}`);
       setRequest(response.data);
     } catch (error) {
       setMessage('Error fetching procurement request details');
@@ -59,10 +59,10 @@ const ProcurementRequestDetail = () => {
             <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Request Not Found</h2>
             <p className="text-gray-500 mb-8">The procurement request you're looking for doesn't exist.</p>
             <button
-              onClick={() => navigate('/procurement-requests')}
+              onClick={() => navigate('/bills')}
               className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Back to Requests
+              Back to Bills
             </button>
           </div>
         </div>
@@ -76,10 +76,10 @@ const ProcurementRequestDetail = () => {
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-extrabold text-gray-900">Procurement Request Details</h2>
           <button
-            onClick={() => navigate('/procurement-requests')}
+            onClick={() => navigate('/bills')}
             className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Back to Requests
+            Back to Bills
           </button>
         </div>
 
@@ -93,16 +93,16 @@ const ProcurementRequestDetail = () => {
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Request ID</h3>
+              <h3 className="text-sm font-medium text-gray-500">Order ID</h3>
               <p className="text-lg font-semibold text-gray-900">{request._id.slice(-8)}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Date</h3>
-              <p className="text-lg font-semibold text-gray-900">{formatDate(request.requestDate)}</p>
+              <h3 className="text-sm font-medium text-gray-500">Bill Date</h3>
+              <p className="text-lg font-semibold text-gray-900">{request.billDate ? formatDate(request.billDate) : 'N/A'}</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Requested By</h3>
-              <p className="text-lg font-semibold text-gray-900">{request.requestedBy?.name || 'Unknown'}</p>
+              <h3 className="text-sm font-medium text-gray-500">Vendor</h3>
+              <p className="text-lg font-semibold text-gray-900">{request.vendorName}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Status</h3>
@@ -116,7 +116,7 @@ const ProcurementRequestDetail = () => {
         {/* Items Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Requested Items</h3>
+            <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -132,7 +132,10 @@ const ProcurementRequestDetail = () => {
                     Unit
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reason
+                    Price/Unit
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total
                   </th>
                 </tr>
               </thead>
@@ -141,23 +144,26 @@ const ProcurementRequestDetail = () => {
                   request.items.map((item, index) => (
                     <tr key={index}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.item?.name || 'Unknown Item'}
+                        {item.itemId?.name || 'Unknown Item'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {item.quantity}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.item?.unit || 'N/A'}
+                        {item.unit}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {item.reason || 'No reason provided'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ₹{item.pricePerUnit}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ₹{item.totalAmount}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                      No items found in this request
+                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                      No items found in this order
                     </td>
                   </tr>
                 )}
@@ -165,6 +171,20 @@ const ProcurementRequestDetail = () => {
             </table>
           </div>
         </div>
+
+        {/* Bill Image Display */}
+        {request.billImageUrl && (
+          <div className="bg-white shadow rounded-lg p-6 mt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Bill Image</h3>
+            <div className="flex justify-center">
+              <img
+                src={request.billImageUrl}
+                alt="Bill"
+                className="max-w-full h-auto max-h-96 rounded-lg shadow-lg"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

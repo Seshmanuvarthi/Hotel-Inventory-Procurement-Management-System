@@ -46,10 +46,11 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: Package, label: 'Issue Stock', path: '/issue-stock' },
       { icon: Building, label: 'Store Stock', path: '/store-stock' },
       { icon: FileText, label: 'Issue Logs', path: '/issue-log' },
+      { icon: Receipt, label: 'Upload Bill', path: '/upload-bill-list' },
     ],
     accounts: [
       { icon: Home, label: 'Dashboard', path: '/accounts-dashboard' },
-      { icon: Receipt, label: 'Enter Payment', path: '/enter-payment' },
+      { icon: Receipt, label: 'Previous Orders', path: '/bills' },
       { icon: FileText, label: 'Pending Payments', path: '/pending-payments' },
       { icon: Users, label: 'Vendor Ledger', path: '/vendor-ledger' },
       { icon: BarChart3, label: 'Payment Summary', path: '/payment-summary' },

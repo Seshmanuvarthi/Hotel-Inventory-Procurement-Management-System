@@ -1,11 +1,38 @@
 const ProcurementOrder = require('../models/ProcurementOrder');
 const CentralStoreStock = require('../models/CentralStoreStock');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+
+// Configure Cloudinary
+require('dotenv').config();
+
+// Cloudinary configuration will be skipped if CLOUDINARY_URL is invalid
+if (process.env.CLOUDINARY_URL && process.env.CLOUDINARY_URL.startsWith('cloudinary://')) {
+  try {
+    cloudinary.config({
+      cloudinary_url: process.env.CLOUDINARY_URL
+    });
+  } catch (error) {
+    console.warn('Failed to configure Cloudinary:', error.message);
+  }
+} else {
+  console.warn('CLOUDINARY_URL not found or invalid in environment variables. Cloudinary features may not work.');
+}
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Create procurement order (Procurement Officer)
 const createProcurementOrder = async (req, res) => {
   try {
     const { vendorName, billNumber, billDate, items, remarks } = req.body;
     const requestedBy = req.user.id;
+
+    // Validate required fields
+    if (!vendorName || !billDate) {
+      return res.status(400).json({ message: 'Vendor name and bill date are required' });
+    }
 
     // Validate items
     if (!items || items.length === 0) {
@@ -96,11 +123,11 @@ const getProcurementOrderById = async (req, res) => {
   }
 };
 
-// MD approve order
+// MD approve order with item selection
 const mdApproveOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { remarks } = req.body;
+    const { approvedItems, rejectedItems, remarks } = req.body;
     const approvedByMD = req.user.id;
 
     const order = await ProcurementOrder.findById(id);
@@ -112,7 +139,36 @@ const mdApproveOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order is not pending MD approval' });
     }
 
-    order.status = 'pending_payment';
+    // Update item approval status
+    order.items.forEach((item, index) => {
+      if (approvedItems && approvedItems.includes(index)) {
+        item.mdApprovalStatus = 'approved';
+      } else if (rejectedItems && rejectedItems.includes(index)) {
+        item.mdApprovalStatus = 'rejected';
+      } else {
+        item.mdApprovalStatus = 'approved'; // Default to approved for backward compatibility
+      }
+    });
+
+    // Generate unique bill number after MD approval
+    const billNumber = `BILL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Recalculate totals based on approved items only
+    let subtotal = 0;
+    let gstTotal = 0;
+
+    order.items.forEach(item => {
+      if (item.mdApprovalStatus === 'approved') {
+        subtotal += item.quantity * item.pricePerUnit;
+        gstTotal += item.gstAmount;
+      }
+    });
+
+    order.subtotal = subtotal;
+    order.gstTotal = gstTotal;
+    order.finalAmount = subtotal + gstTotal;
+    order.billNumber = billNumber;
+    order.status = 'md_approved';
     order.approvedByMD = approvedByMD;
     order.approvedAt = new Date();
     order.remarks = remarks || order.remarks;
@@ -157,6 +213,130 @@ const mdRejectOrder = async (req, res) => {
   }
 };
 
+// Upload bill image (Store Manager)
+const uploadBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { receivedItems, billDate, remarks } = req.body;
+    const uploadedBy = req.user.id;
+
+    const order = await ProcurementOrder.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Procurement order not found' });
+    }
+
+    if (order.status !== 'md_approved') {
+      return res.status(400).json({ message: 'Order is not approved by MD' });
+    }
+
+    // Parse receivedItems if it's a string
+    let parsedReceivedItems = receivedItems;
+    if (typeof receivedItems === 'string') {
+      try {
+        parsedReceivedItems = JSON.parse(receivedItems);
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid receivedItems format' });
+      }
+    }
+
+    // Calculate amounts based on received items
+    let calculatedSubtotal = 0;
+    let calculatedGstTotal = 0;
+
+    // Update received status for items
+    if (parsedReceivedItems && Array.isArray(parsedReceivedItems)) {
+      order.items.forEach((item, index) => {
+        if (item.mdApprovalStatus === 'approved') {
+          const itemData = parsedReceivedItems.find(item => item.index === index);
+          if (itemData) {
+            item.receivedStatus = itemData.status;
+            item.receivedQuantity = itemData.quantity || 0;
+
+            // Calculate amounts based on received quantity
+            if (item.receivedStatus === 'received' || item.receivedStatus === 'partial') {
+              const actualQuantity = item.receivedQuantity || item.quantity;
+              calculatedSubtotal += actualQuantity * item.pricePerUnit;
+              calculatedGstTotal += (actualQuantity * item.pricePerUnit * item.gstPercentage) / 100;
+            }
+          } else {
+            item.receivedStatus = 'not_received';
+            item.receivedQuantity = 0;
+          }
+        }
+      });
+    }
+
+    // Store calculated amounts
+    order.calculatedAmount = calculatedSubtotal + calculatedGstTotal;
+    order.calculatedSubtotal = calculatedSubtotal;
+    order.calculatedGstTotal = calculatedGstTotal;
+
+    // Upload image to Cloudinary if provided
+    let billImageUrl = null;
+    if (req.file) {
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'procurement-bills',
+            public_id: `bill-${order._id}-${Date.now()}`,
+            resource_type: 'image'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      billImageUrl = result.secure_url;
+    }
+
+    order.billImageUrl = billImageUrl;
+    order.billUploadedBy = uploadedBy;
+    order.billUploadedAt = new Date();
+    order.uploadDate = new Date();
+    order.billDate = billDate ? new Date(billDate) : new Date();
+    order.status = 'pending_payment';
+    order.remarks = remarks || order.remarks;
+
+    await order.save();
+
+    // Update central store stock for received items
+    for (const item of order.items) {
+      if (item.mdApprovalStatus === 'approved' && item.receivedStatus === 'received') {
+        let stock = await CentralStoreStock.findOne({ itemId: item.itemId });
+
+        if (!stock) {
+          stock = new CentralStoreStock({
+            itemId: item.itemId,
+            quantityOnHand: 0,
+            minimumStockLevel: 0
+          });
+        }
+
+        stock.quantityOnHand += item.receivedQuantity || item.quantity;
+
+        // Update previousMaxStock if new stock exceeds it
+        if (stock.quantityOnHand > (stock.previousMaxStock || 0)) {
+          stock.previousMaxStock = stock.quantityOnHand;
+        }
+
+        stock.lastUpdated = new Date();
+        await stock.save();
+      }
+    }
+
+    res.json({
+      message: 'Bill uploaded successfully and stock updated for received items',
+      order
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error uploading bill', error: error.message });
+  }
+};
+
+
+
 // Mark as paid (Accounts)
 const markAsPaid = async (req, res) => {
   try {
@@ -181,31 +361,8 @@ const markAsPaid = async (req, res) => {
 
     await order.save();
 
-    // Update central store stock
-    for (const item of order.items) {
-      let stock = await CentralStoreStock.findOne({ itemId: item.itemId });
-
-      if (!stock) {
-        stock = new CentralStoreStock({
-          itemId: item.itemId,
-          quantityOnHand: 0,
-          minimumStockLevel: 0
-        });
-      }
-
-      stock.quantityOnHand += item.quantity;
-
-      // Update previousMaxStock if new stock exceeds it
-      if (stock.quantityOnHand > (stock.previousMaxStock || 0)) {
-        stock.previousMaxStock = stock.quantityOnHand;
-      }
-
-      stock.lastUpdated = new Date();
-      await stock.save();
-    }
-
     res.json({
-      message: 'Payment marked successfully and stock updated',
+      message: 'Payment marked successfully',
       order
     });
   } catch (error) {
@@ -219,5 +376,7 @@ module.exports = {
   getProcurementOrderById,
   mdApproveOrder,
   mdRejectOrder,
-  markAsPaid
+  uploadBill,
+  markAsPaid,
+  upload // Export multer upload middleware
 };

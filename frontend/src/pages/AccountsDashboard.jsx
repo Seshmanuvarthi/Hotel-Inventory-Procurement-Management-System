@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import DashboardCard from '../components/DashboardCard';
 import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
-import { CreditCard, Clock, Users, BarChart3, Receipt } from 'lucide-react';
+import { Clock, Users, BarChart3, Receipt } from 'lucide-react';
 
 const AccountsDashboard = () => {
   const navigate = useNavigate();
@@ -19,35 +19,35 @@ const AccountsDashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <DashboardCard
-            title="Enter Payment"
-            value="Process Payment"
-            icon={CreditCard}
+            title="Previous Orders"
+            value="View Orders"
+            icon={Receipt}
             color="primary"
-            subtitle="Record vendor payments"
+            subtitle="View processed orders with bill details and images"
           >
             <div className="mt-4">
               <PrimaryButton
-                onClick={() => navigate('/enter-payment')}
+                onClick={() => navigate('/bills')}
                 className="w-full"
               >
-                Enter Payment
+                View Orders
               </PrimaryButton>
             </div>
           </DashboardCard>
 
           <DashboardCard
-            title="Pending Payments"
-            value="Outstanding"
+            title="Payment History"
+            value="Transaction Records"
             icon={Clock}
             color="warning"
-            subtitle="View pending payments"
+            subtitle="View completed payments"
           >
             <div className="mt-4">
               <SecondaryButton
-                onClick={() => navigate('/pending-payments')}
+                onClick={() => navigate('/payment-summary')}
                 className="w-full"
               >
-                View Pending
+                View History
               </SecondaryButton>
             </div>
           </DashboardCard>
@@ -105,18 +105,18 @@ const AccountsDashboard = () => {
               <span className="text-sm font-medium text-text-dark">Bills</span>
             </button>
             <button
-              onClick={() => navigate('/enter-payment')}
+              onClick={() => navigate('/bills')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >
-              <CreditCard className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">New Payment</span>
+              <Receipt className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
+              <span className="text-sm font-medium text-text-dark">Previous Orders</span>
             </button>
             <button
-              onClick={() => navigate('/pending-payments')}
+              onClick={() => navigate('/payment-summary')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >
               <Clock className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Pending</span>
+              <span className="text-sm font-medium text-text-dark">Payment History</span>
             </button>
             <button
               onClick={() => navigate('/vendor-ledger')}
