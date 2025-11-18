@@ -19,18 +19,18 @@ const StoreManagerDashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <DashboardCard
-            title="Issue Stock"
-            value="Distribution"
+            title="Fulfill Stock Requests"
+            value="Restaurant Requests"
             icon={Package}
             color="primary"
-            subtitle="Issue stock to hotels and outlets"
+            subtitle="Fulfill pending stock requests from restaurants"
           >
             <div className="mt-4">
               <PrimaryButton
-                onClick={() => navigate('/issue-stock')}
+                onClick={() => navigate('/pending-restaurant-stock-requests')}
                 className="w-full"
               >
-                Issue Stock
+                Fulfill Requests
               </PrimaryButton>
             </div>
           </DashboardCard>
@@ -74,11 +74,11 @@ const StoreManagerDashboard = () => {
           <h3 className="text-xl font-semibold text-text-dark mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
-              onClick={() => navigate('/issue-stock')}
+              onClick={() => navigate('/pending-restaurant-stock-requests')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >
               <Package className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Issue Stock</span>
+              <span className="text-sm font-medium text-text-dark">Fulfill Requests</span>
             </button>
             <button
               onClick={() => navigate('/store-stock')}
@@ -95,11 +95,11 @@ const StoreManagerDashboard = () => {
               <span className="text-sm font-medium text-text-dark">Issue History</span>
             </button>
             <button
-              onClick={() => navigate('/procurement-requests')}
+              onClick={() => navigate('/pending-restaurant-stock-requests')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >
               <Truck className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Procurement</span>
+              <span className="text-sm font-medium text-text-dark">Restaurant Requests</span>
             </button>
           </div>
         </div>

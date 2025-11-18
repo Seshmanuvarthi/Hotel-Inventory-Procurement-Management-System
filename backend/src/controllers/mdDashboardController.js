@@ -6,6 +6,7 @@ const SalesEntry = require('../models/SalesEntry');
 const ExpectedConsumption = require('../models/ExpectedConsumption');
 const Hotel = require('../models/Hotel');
 const Item = require('../models/Item');
+const LeakageAlert = require('../models/LeakageAlert');
 const mongoose = require('mongoose');
 
 // GET /md-dashboard/summary
@@ -41,7 +42,7 @@ const getSummary = async (req, res) => {
     const totalPaid = paidOrdersResult.length > 0 ? paidOrdersResult[0].total : 0;
     const totalPendingAmount = totalOrders - totalPaid;
 
-    // Total leakage (issued - consumed)
+    // Total leakage percentage ((issued - consumed) / issued) * 100
     const issuedResult = await StockIssue.aggregate([
       { $match: { dateIssued: { $gte: startOfMonth, $lte: endOfMonth } } },
       { $unwind: '$items' },
@@ -54,7 +55,7 @@ const getSummary = async (req, res) => {
     ]);
     const totalIssued = issuedResult.length > 0 ? issuedResult[0].total : 0;
     const totalConsumed = consumedResult.length > 0 ? consumedResult[0].total : 0;
-    const totalLeakage = totalIssued - totalConsumed;
+    const totalLeakagePercentage = totalIssued > 0 ? ((totalIssued - totalConsumed) / totalIssued * 100).toFixed(2) : 0;
 
     // Total wastage percentage (actual - expected) / expected * 100
     const expectedResult = await ExpectedConsumption.aggregate([
@@ -77,9 +78,10 @@ const getSummary = async (req, res) => {
       totalProcurementThisMonth,
       totalPaymentsThisMonth,
       totalPendingAmount,
-      totalLeakage,
+      totalLeakagePercentage: parseFloat(totalLeakagePercentage),
       totalWastagePercentage: parseFloat(totalWastagePercentage),
-      totalSalesThisMonth
+      totalSalesThisMonth,
+      activeAlerts: await LeakageAlert.countDocuments({ status: 'active' })
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching summary', error: error.message });
@@ -117,8 +119,8 @@ const getLeakageChart = async (req, res) => {
     for (const itemId of allItemIds) {
       const issued = issuedByItem.find(r => r._id.toString() === itemId)?.totalIssued || 0;
       const consumed = consumedByItem.find(r => r._id.toString() === itemId)?.totalConsumed || 0;
-      const leakage = issued - consumed;
-      itemLeakage.push({ itemId, expected: issued, actual: consumed, leakage });
+      const leakage = issued > 0 ? ((issued - consumed) / issued * 100).toFixed(2) : 0;
+      itemLeakage.push({ itemId, expected: issued, actual: consumed, leakage: parseFloat(leakage) });
     }
 
     const populatedResults = await Promise.all(
@@ -165,8 +167,8 @@ const getHotelLeakage = async (req, res) => {
     for (const hotelId of allHotelIds) {
       const issued = issuedByHotel.find(r => r._id.toString() === hotelId)?.totalIssued || 0;
       const consumed = consumedByHotel.find(r => r._id.toString() === hotelId)?.totalConsumed || 0;
-      const leakage = issued - consumed;
-      hotelLeakage.push({ hotelId, expected: issued, actual: consumed, leakage });
+      const leakage = issued > 0 ? ((issued - consumed) / issued * 100).toFixed(2) : 0;
+      hotelLeakage.push({ hotelId, expected: issued, actual: consumed, leakage: parseFloat(leakage) });
     }
 
     const populatedResults = await Promise.all(

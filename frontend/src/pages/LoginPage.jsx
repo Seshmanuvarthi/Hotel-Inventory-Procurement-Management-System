@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../utils/axiosInstance';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Loader } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
     try {
       const response = await axiosInstance.post('/auth/login', { email, password });
       localStorage.setItem('token', response.data.token);
@@ -43,6 +46,8 @@ const LoginPage = () => {
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,6 +66,11 @@ const LoginPage = () => {
               className="w-full px-3 py-2 border border-secondary/20 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary bg-background text-text-dark"
               required
             />
+          </div>
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-secondary hover:text-secondary/80 text-sm">
+              Forgot Password?
+            </Link>
           </div>
           <div>
             <label className="block text-sm font-medium text-text-dark mb-2">Password</label>
@@ -83,9 +93,17 @@ const LoginPage = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-primary text-card py-2 px-4 rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors duration-200 font-medium"
+            disabled={isLoading}
+            className="w-full bg-primary text-card py-2 px-4 rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors duration-200 font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {isLoading ? (
+              <>
+                <Loader className="animate-spin mr-2" size={20} />
+                Logging in...
+              </>
+            ) : (
+              'Login'
+            )}
           </button>
         </form>
       </div>

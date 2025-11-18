@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import DashboardCard from '../components/DashboardCard';
 import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
-import { ChefHat, TrendingUp } from 'lucide-react';
+import { ChefHat, TrendingUp, Package, FileText } from 'lucide-react';
 
 const HotelDashboard = () => {
   const navigate = useNavigate();
@@ -17,12 +17,46 @@ const HotelDashboard = () => {
           <p className="text-accent">Track consumption, sales, and performance metrics</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <DashboardCard
+            title="Stock Request"
+            value="Request Items"
+            icon={Package}
+            color="primary"
+            subtitle="Request items from central store"
+          >
+            <div className="mt-4">
+              <PrimaryButton
+                onClick={() => navigate('/create-restaurant-stock-request')}
+                className="w-full"
+              >
+                Create Request
+              </PrimaryButton>
+            </div>
+          </DashboardCard>
+
+          <DashboardCard
+            title="My Requests"
+            value="Request History"
+            icon={FileText}
+            color="secondary"
+            subtitle="View all your stock requests"
+          >
+            <div className="mt-4">
+              <SecondaryButton
+                onClick={() => navigate('/restaurant-stock-requests')}
+                className="w-full"
+              >
+                View Requests
+              </SecondaryButton>
+            </div>
+          </DashboardCard>
+
           <DashboardCard
             title="Daily Consumption"
             value="Track Usage"
             icon={ChefHat}
-            color="primary"
+            color="accent"
             subtitle="Record daily ingredient consumption"
           >
             <div className="mt-4">
@@ -34,12 +68,14 @@ const HotelDashboard = () => {
               </PrimaryButton>
             </div>
           </DashboardCard>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <DashboardCard
             title="Daily Sales"
             value="Revenue Tracking"
             icon={TrendingUp}
-            color="secondary"
+            color="primary"
             subtitle="Record daily sales and revenue"
           >
             <div className="mt-4">
@@ -56,7 +92,7 @@ const HotelDashboard = () => {
             title="Performance Reports"
             value="Analytics View"
             icon={TrendingUp}
-            color="accent"
+            color="secondary"
             subtitle="View consumption vs sales reports"
           >
             <div className="mt-4">

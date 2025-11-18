@@ -38,6 +38,8 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
     ],
     hotel_manager: [
       { icon: Home, label: 'Dashboard', path: '/hotel-dashboard' },
+      { icon: Package, label: 'Stock Request', path: '/create-restaurant-stock-request' },
+      { icon: FileText, label: 'My Requests', path: '/restaurant-stock-requests' },
       { icon: ChefHat, label: 'Consumption Entry', path: '/consumption-entry' },
       { icon: TrendingUp, label: 'Sales Entry', path: '/sales-entry' },
     ],
@@ -47,6 +49,7 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: Building, label: 'Store Stock', path: '/store-stock' },
       { icon: FileText, label: 'Issue Logs', path: '/issue-log' },
       { icon: Receipt, label: 'Upload Bill', path: '/upload-bill-list' },
+      { icon: ShoppingCart, label: 'Restaurant Requests', path: '/pending-restaurant-stock-requests' },
     ],
     accounts: [
       { icon: Home, label: 'Dashboard', path: '/accounts-dashboard' },

@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import UserListPage from './pages/UserListPage';
 import AddOptionsPage from './pages/AddOptionsPage';
@@ -25,6 +27,10 @@ import CreateProcurementOrder from './pages/CreateProcurementOrder';
 import ProcurementOrdersList from './pages/ProcurementOrdersList';
 import ProcurementRequestDetail from './pages/ProcurementRequestDetail';
 import MDApprovalDashboard from './pages/MDApprovalDashboard';
+import CreateRestaurantStockRequest from './pages/CreateRestaurantStockRequest';
+import RestaurantStockRequestsList from './pages/RestaurantStockRequestsList';
+import RestaurantStockRequestDetail from './pages/RestaurantStockRequestDetail';
+import PendingRestaurantStockRequests from './pages/PendingRestaurantStockRequests';
 import HotelDashboard from './pages/HotelDashboard';
 import ConsumptionEntry from './pages/ConsumptionEntry';
 import SalesEntry from './pages/SalesEntry';
@@ -32,6 +38,7 @@ import MDReportsDashboard from './pages/MDReportsDashboard';
 import IssuedVsConsumedPage from './pages/IssuedVsConsumedPage';
 import ConsumedVsSalesPage from './pages/ConsumedVsSalesPage';
 import LeakagePage from './pages/LeakagePage';
+import LeakageAlertsPage from './pages/LeakageAlertsPage';
 import AccountsDashboard from './pages/AccountsDashboard';
 import EnterPaymentPage from './pages/EnterPaymentPage';
 import PendingPaymentsPage from './pages/PendingPaymentsPage';
@@ -46,6 +53,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route
           path="/superadmin-dashboard"
           element={
@@ -250,6 +259,38 @@ function App() {
           }
         />
         <Route
+          path="/create-restaurant-stock-request"
+          element={
+            <ProtectedRoute allowedRoles={['hotel_manager']}>
+              <CreateRestaurantStockRequest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/restaurant-stock-requests"
+          element={
+            <ProtectedRoute allowedRoles={['hotel_manager']}>
+              <RestaurantStockRequestsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/restaurant-stock-request/:id"
+          element={
+            <ProtectedRoute allowedRoles={['hotel_manager', 'store_manager', 'superadmin']}>
+              <RestaurantStockRequestDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pending-restaurant-stock-requests"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'superadmin']}>
+              <PendingRestaurantStockRequests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/consumption-entry"
           element={
             <ProtectedRoute allowedRoles={['hotel_manager']}>
@@ -294,6 +335,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['md', 'superadmin']}>
               <LeakagePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leakage-alerts"
+          element={
+            <ProtectedRoute allowedRoles={['md', 'superadmin']}>
+              <LeakageAlertsPage />
             </ProtectedRoute>
           }
         />

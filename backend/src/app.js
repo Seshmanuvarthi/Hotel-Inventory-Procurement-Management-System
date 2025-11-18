@@ -12,11 +12,13 @@ const storeStockRoutes = require('./routes/storeStockRoutes');
 const stockIssueRoutes = require('./routes/stockIssueRoutes');
 const procurementRoutes = require('./routes/procurementRoutes');
 const procurementOrderRoutes = require('./routes/procurementOrderRoutes');
+const restaurantStockRequestRoutes = require('./routes/restaurantStockRequestRoutes');
 const paymentsRoutes = require('./routes/paymentsRoutes');
 const mdDashboardRoutes = require('./routes/mdDashboardRoutes');
 const consumptionRoutes = require('./routes/consumptionRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const reportsRoutes = require('./routes/reportsRoutes');
+const leakageAlertRoutes = require('./routes/leakageAlertRoutes');
 
 // Initialize Cloudinary configuration
 const cloudinary = require('cloudinary').v2;
@@ -71,11 +73,13 @@ app.use('/store', storeStockRoutes);
 app.use('/store', stockIssueRoutes);
 app.use('/procurement', procurementRoutes);
 app.use('/procurement-orders', procurementOrderRoutes);
+app.use('/restaurant-stock-requests', restaurantStockRequestRoutes);
 app.use('/payments', paymentsRoutes);
 app.use('/md-dashboard', mdDashboardRoutes);
 app.use('/consumption', consumptionRoutes);
 app.use('/sales', salesRoutes);
 app.use('/reports', reportsRoutes);
+app.use('/leakage-alerts', leakageAlertRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

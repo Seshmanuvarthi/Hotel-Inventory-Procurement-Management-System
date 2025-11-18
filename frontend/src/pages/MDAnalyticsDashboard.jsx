@@ -15,7 +15,7 @@ import StyledForm from '../components/StyledForm';
 
 import {
   TrendingUp, DollarSign, AlertTriangle, BarChart3,
-  PieChart, Activity,
+  PieChart, Activity, Bell,
 } from 'lucide-react';
 
 const MDAnalyticsDashboard = () => {
@@ -159,9 +159,10 @@ const MDAnalyticsDashboard = () => {
           <DashboardCard title="Procurement" value={`₹${summary.totalProcurementThisMonth?.toLocaleString()}`} icon={DollarSign} color="primary" subtitle="This Month" />
           <DashboardCard title="Payments" value={`₹${summary.totalPaymentsThisMonth?.toLocaleString()}`} icon={TrendingUp} color="secondary" subtitle="This Month" />
           <DashboardCard title="Pending" value={`₹${summary.totalPendingAmount?.toLocaleString()}`} icon={AlertTriangle} color="warning" subtitle="Outstanding" />
-          <DashboardCard title="Leakage" value={`${summary.totalLeakage || 0}`} icon={Activity} color="accent" subtitle="Units" />
+          <DashboardCard title="Leakage" value={`${summary.totalLeakagePercentage || 0}%`} icon={Activity} color="accent" subtitle="Percentage" />
           <DashboardCard title="Wastage %" value={`${summary.totalWastagePercentage || 0}%`} icon={BarChart3} color="primary" subtitle="Overall" />
           <DashboardCard title="Sales" value={`₹${summary.totalSalesThisMonth?.toLocaleString()}`} icon={PieChart} color="secondary" subtitle="This Month" />
+          <DashboardCard title="Alerts" value={summary.activeAlerts || 0} icon={Bell} color="warning" subtitle="Active" />
         </div>
 
         {/* CHARTS GRID */}
@@ -197,7 +198,7 @@ const MDAnalyticsDashboard = () => {
                   <XAxis dataKey="itemName" angle={-45} textAnchor="end" height={80} />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="leakage" fill="#ff7300" />
+                  <Bar dataKey="leakage" fill="#ff7300" name="Leakage %" />
                 </BarChart>
               </ResponsiveContainer>
             ) : <p className="text-accent text-center">No leakage data</p>}
@@ -215,8 +216,8 @@ const MDAnalyticsDashboard = () => {
                     cx="50%" cy="50%"
                     outerRadius={80}
                     dataKey="leakage"
-                    label={({ hotelName, percent }) =>
-                      `${hotelName}: ${(percent * 100).toFixed(0)}%`
+                    label={({ hotelName, leakage }) =>
+                      `${hotelName}: ${leakage}%`
                     }
                   >
                     {hotelLeakage.map((entry, idx) => (
@@ -282,6 +283,21 @@ const MDAnalyticsDashboard = () => {
         <div className="bg-card rounded-xl p-6 shadow-luxury border border-secondary/10">
           <h3 className="text-xl font-semibold mb-6">Vendor Performance</h3>
           <StyledTable headers={vendorTableHeaders} data={vendorTableData} />
+        </div>
+
+        {/* ALERTS SECTION */}
+        <div className="bg-card rounded-xl p-6 shadow-luxury border border-secondary/10">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold">Leakage Alerts</h3>
+            <PrimaryButton onClick={() => window.open('/leakage-alerts', '_blank')}>
+              View All Alerts
+            </PrimaryButton>
+          </div>
+          <div className="text-center text-accent">
+            <Bell className="w-12 h-12 mx-auto mb-2 text-warning" />
+            <p>Real-time leakage monitoring and alerts</p>
+            <p className="text-sm mt-2">Click "View All Alerts" to manage leakage alerts</p>
+          </div>
         </div>
 
       </div> {/* ✅ CORRECTLY CLOSED MAIN WRAPPER */}
