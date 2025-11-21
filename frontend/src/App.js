@@ -33,7 +33,7 @@ import RestaurantStockRequestDetail from './pages/RestaurantStockRequestDetail';
 import PendingRestaurantStockRequests from './pages/PendingRestaurantStockRequests';
 import HotelDashboard from './pages/HotelDashboard';
 import ConsumptionEntry from './pages/ConsumptionEntry';
-import SalesEntry from './pages/SalesEntry';
+import OrderEntry from './pages/OrderEntry';
 import MDReportsDashboard from './pages/MDReportsDashboard';
 import IssuedVsConsumedPage from './pages/IssuedVsConsumedPage';
 import ConsumedVsSalesPage from './pages/ConsumedVsSalesPage';
@@ -299,13 +299,14 @@ function App() {
           }
         />
         <Route
-          path="/sales-entry"
+          path="/order-entry"
           element={
             <ProtectedRoute allowedRoles={['hotel_manager']}>
-              <SalesEntry />
+              <OrderEntry />
             </ProtectedRoute>
           }
         />
+        
         <Route
           path="/md-reports-dashboard"
           element={

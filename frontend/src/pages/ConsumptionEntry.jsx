@@ -10,7 +10,8 @@ const ConsumptionEntry = () => {
   const [consumptionItems, setConsumptionItems] = useState([{
     itemId: '',
     quantityConsumed: '',
-    unit: ''
+    unit: '',
+    bottles: '' // for bar items
   }]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [remarks, setRemarks] = useState('');
@@ -56,6 +57,20 @@ const ConsumptionEntry = () => {
       const selectedItem = items.find(item => item._id === value);
       if (selectedItem) {
         updatedItems[index].unit = selectedItem.unit;
+        // If bar item and unit is bottle, set bottles to 1 initially
+        if (selectedItem.category === 'Bar' && selectedItem.unit === 'bottle') {
+          updatedItems[index].bottles = 1;
+          updatedItems[index].quantityConsumed = selectedItem.bottleSize || 0;
+          updatedItems[index].unit = 'ml'; // Change unit to ml for calculation
+        }
+      }
+    }
+
+    if (field === 'bottles') {
+      const selectedItem = items.find(item => item._id === updatedItems[index].itemId);
+      if (selectedItem && selectedItem.category === 'Bar' && selectedItem.unit === 'bottle') {
+        updatedItems[index].quantityConsumed = parseFloat(value) * (selectedItem.bottleSize || 0);
+        updatedItems[index].unit = 'ml'; // Ensure unit is ml
       }
     }
 
@@ -107,7 +122,8 @@ const ConsumptionEntry = () => {
       setConsumptionItems([{
         itemId: '',
         quantityConsumed: '',
-        unit: ''
+        unit: '',
+        bottles: ''
       }]);
       setRemarks('');
     } catch (error) {
@@ -158,50 +174,80 @@ const ConsumptionEntry = () => {
                   </PrimaryButton>
                 </div>
 
-                {consumptionItems.map((item, index) => (
-                  <div key={index} className="bg-secondary/5 p-4 rounded-lg border border-secondary/20">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                      <StyledForm.Select
-                        label="Item"
-                        value={item.itemId}
-                        onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
-                        options={itemOptions}
-                        placeholder="Select item"
-                        required
-                      />
+                {consumptionItems.map((item, index) => {
+                  const selectedItem = items.find(i => i._id === item.itemId);
+                  const isBarBottle = selectedItem && selectedItem.category === 'Bar' && selectedItem.unit === 'bottle';
 
-                      <StyledForm.Input
-                        label="Quantity Consumed"
-                        type="number"
-                        step="0.01"
-                        value={item.quantityConsumed}
-                        onChange={(e) => handleItemChange(index, 'quantityConsumed', e.target.value)}
-                        placeholder="Quantity"
-                        required
-                      />
+                  return (
+                    <div key={index} className="bg-secondary/5 p-4 rounded-lg border border-secondary/20">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <StyledForm.Select
+                          label="Item"
+                          value={item.itemId}
+                          onChange={(e) => handleItemChange(index, 'itemId', e.target.value)}
+                          options={itemOptions}
+                          placeholder="Select item"
+                          required
+                        />
 
-                      <StyledForm.Select
-                        label="Unit"
-                        value={item.unit}
-                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
-                        options={unitOptions}
-                        placeholder="Select Unit"
-                      />
+                        {isBarBottle ? (
+                          <>
+                            <StyledForm.Input
+                              label="Number of Bottles"
+                              type="number"
+                              step="1"
+                              value={item.bottles || ''}
+                              onChange={(e) => handleItemChange(index, 'bottles', e.target.value)}
+                              placeholder="Bottles"
+                              required
+                            />
 
-                      {consumptionItems.length > 1 && (
-                        <div className="flex justify-end">
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => removeItem(index)}
-                            className="px-3 py-2 bg-red-500 hover:bg-red-600"
-                          >
-                            Remove
-                          </SecondaryButton>
-                        </div>
-                      )}
+                            <StyledForm.Input
+                              label="Total Quantity (ml)"
+                              type="number"
+                              step="0.01"
+                              value={item.quantityConsumed}
+                              placeholder="Total ml"
+                              readOnly
+                              className="bg-gray-100"
+                            />
+                          </>
+                        ) : (
+                          <StyledForm.Input
+                            label="Quantity Consumed"
+                            type="number"
+                            step="0.01"
+                            value={item.quantityConsumed}
+                            onChange={(e) => handleItemChange(index, 'quantityConsumed', e.target.value)}
+                            placeholder="Quantity"
+                            required
+                          />
+                        )}
+
+                        <StyledForm.Select
+                          label="Unit"
+                          value={item.unit}
+                          onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                          options={unitOptions}
+                          placeholder="Select Unit"
+                          disabled={isBarBottle} // Disable unit selection for bar bottles
+                        />
+
+                        {consumptionItems.length > 1 && (
+                          <div className="flex justify-end">
+                            <SecondaryButton
+                              type="button"
+                              onClick={() => removeItem(index)}
+                              className="px-3 py-2 bg-red-500 hover:bg-red-600"
+                            >
+                              Remove
+                            </SecondaryButton>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <StyledForm.Textarea
@@ -259,6 +305,7 @@ const ConsumptionEntry = () => {
             <h3 className="text-lg font-semibold text-text-dark mb-2">Consumption Entry Guidelines</h3>
             <p className="text-sm text-accent">
               Record all ingredient consumption accurately for precise inventory management.
+              For bar items in bottles, enter the number of bottles consumed - the system will auto-calculate the total ml based on bottle size.
               Ensure quantities match actual usage to maintain accurate stock levels.
               Add remarks for any special circumstances or adjustments.
             </p>

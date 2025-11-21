@@ -1,6 +1,10 @@
 import React from 'react';
 
-const StyledTable = ({ headers, data, className = '', onRowClick }) => {
+const StyledTable = ({ headers = [], data = [], className = '', onRowClick }) => {
+  if (!Array.isArray(headers) || !Array.isArray(data)) {
+    return null;
+  }
+
   return (
     <div className={`bg-card rounded-xl shadow-luxury overflow-hidden border border-secondary/10 ${className}`}>
       <div className="overflow-x-auto">

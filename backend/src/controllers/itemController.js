@@ -59,11 +59,14 @@ const getItemById = async (req, res) => {
 // Update Item
 const updateItem = async (req, res) => {
   try {
-    const { name, category, unit, gstApplicable, vendors } = req.body;
+    const { name, category, unit, bottleSize, gstApplicable, vendors } = req.body;
 
     // Validation
     if (!name || !category || !unit) {
       return res.status(400).json({ message: 'Name, category, and unit are required' });
+    }
+    if (category === 'Bar' && unit === 'bottle' && !bottleSize) {
+      return res.status(400).json({ message: 'Bottle size is required for bar items with bottle unit' });
     }
     if (!vendors || vendors.length === 0) {
       return res.status(400).json({ message: 'At least one vendor is required' });
@@ -76,7 +79,7 @@ const updateItem = async (req, res) => {
 
     const updatedItem = await Item.findByIdAndUpdate(
       req.params.id,
-      { name, category, unit, gstApplicable, vendors },
+      { name, category, unit, bottleSize: bottleSize || null, gstApplicable, vendors },
       { new: true }
     );
 

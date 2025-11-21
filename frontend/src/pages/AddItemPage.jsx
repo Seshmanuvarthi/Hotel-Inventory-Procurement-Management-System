@@ -12,6 +12,7 @@ const AddItemPage = () => {
     name: '',
     category: '',
     unit: '',
+    bottleSize: '',
     gstApplicable: false,
     vendors: [{ vendorName: '', lastPrice: '' }]
   });
@@ -20,7 +21,7 @@ const AddItemPage = () => {
   const [vendors, setVendors] = useState([]);
   const [loadingVendors, setLoadingVendors] = useState(true);
 
-  const categories = ["Grocery", "Vegetables", "Dairy", "Meat", "Spices", "Other"];
+  const categories = ["Grocery", "Vegetables", "Dairy", "Meat", "Spices", "Bar", "Other"];
   const units = ["kg", "g", "litre", "ml", "piece", "packet", "dozen", "bottle", "can", "box"];
 
   // Fetch vendors on component mount

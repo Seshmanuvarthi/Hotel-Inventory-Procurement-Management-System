@@ -16,7 +16,7 @@ const restaurantStockRequestRoutes = require('./routes/restaurantStockRequestRou
 const paymentsRoutes = require('./routes/paymentsRoutes');
 const mdDashboardRoutes = require('./routes/mdDashboardRoutes');
 const consumptionRoutes = require('./routes/consumptionRoutes');
-const salesRoutes = require('./routes/salesRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const reportsRoutes = require('./routes/reportsRoutes');
 const leakageAlertRoutes = require('./routes/leakageAlertRoutes');
 
@@ -77,7 +77,7 @@ app.use('/restaurant-stock-requests', restaurantStockRequestRoutes);
 app.use('/payments', paymentsRoutes);
 app.use('/md-dashboard', mdDashboardRoutes);
 app.use('/consumption', consumptionRoutes);
-app.use('/sales', salesRoutes);
+app.use('/orders', orderRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/leakage-alerts', leakageAlertRoutes);
 

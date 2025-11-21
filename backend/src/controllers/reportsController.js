@@ -1,9 +1,10 @@
 const StockIssue = require('../models/StockIssue');
 const HotelConsumption = require('../models/HotelConsumption');
-const SalesEntry = require('../models/SalesEntry');
+const CustomerOrder = require('../models/CustomerOrder');
 const ExpectedConsumption = require('../models/ExpectedConsumption');
 const Hotel = require('../models/Hotel');
 const Item = require('../models/Item');
+const SalesEntry = require('../models/SalesEntry');
 const { toBaseUnit } = require('../utils/unitConverter');
 
 // GET /reports/issued-vs-consumed

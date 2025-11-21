@@ -35,6 +35,7 @@ const EditItemPage = () => {
         name: item.name,
         category: item.category,
         unit: item.unit,
+        bottleSize: item.bottleSize || '',
         gstApplicable: item.gstApplicable,
         vendors: item.vendors.map(v => ({
           vendorName: v.vendorName,
@@ -176,6 +177,23 @@ const EditItemPage = () => {
                     ))}
                   </select>
                 </div>
+
+                {formData.category === 'Bar' && formData.unit === 'bottle' && (
+                  <div>
+                    <label className="block text-sm font-medium text-text-dark mb-1">
+                      Quantity per Bottle (ml) *
+                    </label>
+                    <input
+                      type="number"
+                      name="bottleSize"
+                      required
+                      value={formData.bottleSize}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      placeholder="Enter quantity per bottle in ml"
+                    />
+                  </div>
+                )}
 
                 <div className="flex items-center">
                   <input

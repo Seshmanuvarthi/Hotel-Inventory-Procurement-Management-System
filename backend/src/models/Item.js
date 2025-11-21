@@ -28,6 +28,9 @@ const itemSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  bottleSize: {
+    type: Number
+  }, // in ml, for bar items
   gstApplicable: {
     type: Boolean,
     default: false

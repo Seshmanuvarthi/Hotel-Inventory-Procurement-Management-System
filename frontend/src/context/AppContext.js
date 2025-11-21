@@ -4,7 +4,7 @@ const AppContext = createContext(null); // Ensure default value is null or an ob
 
 const AppProvider = ({ children }) => {
   const contextValue = {
-    // Add actual context values here.
+    user: JSON.parse(localStorage.getItem('user')) || null,
   };
 
   return (
@@ -14,12 +14,12 @@ const AppProvider = ({ children }) => {
   );
 };
 
-const useAppContext = () => {
+const useAuth = () => {
   const context = useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useAuth must be used within an AppProvider');
   }
   return context;
 };
 
-export { AppProvider, AppContext, useAppContext };
+export { AppProvider, AppContext, useAuth };

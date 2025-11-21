@@ -135,10 +135,14 @@ const StyledTextarea = ({
   );
 };
 
-const StyledForm = ({ fields, formData, onChange }) => {
+const StyledForm = ({ fields = [], formData, onChange }) => {
   const getNestedValue = (obj, path) => {
     return path.split('.').reduce((current, key) => current?.[key], obj);
   };
+
+  if (!Array.isArray(fields)) {
+    return null;
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -41,7 +41,7 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: Package, label: 'Stock Request', path: '/create-restaurant-stock-request' },
       { icon: FileText, label: 'My Requests', path: '/restaurant-stock-requests' },
       { icon: ChefHat, label: 'Consumption Entry', path: '/consumption-entry' },
-      { icon: TrendingUp, label: 'Sales Entry', path: '/sales-entry' },
+      { icon: Receipt, label: 'Order Entry', path: '/order-entry' },
     ],
     store_manager: [
       { icon: Home, label: 'Dashboard', path: '/store-dashboard' },

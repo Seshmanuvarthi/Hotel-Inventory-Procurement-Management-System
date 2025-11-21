@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
-const fromSalesSchema = new mongoose.Schema({
+const fromOrdersSchema = new mongoose.Schema({
   dishName: {
     type: String,
     required: true
   },
-  quantitySold: {
+  quantityOrdered: {
     type: Number,
     required: true
   },
@@ -29,7 +29,7 @@ const expectedItemSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  fromSales: [fromSalesSchema]
+  fromOrders: [fromOrdersSchema]
 });
 
 const expectedConsumptionSchema = new mongoose.Schema({

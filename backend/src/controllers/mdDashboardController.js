@@ -2,7 +2,7 @@ const ProcurementOrder = require('../models/ProcurementOrder');
 const getLeakageData = require('../services/leakageService');
 const StockIssue = require('../models/StockIssue');
 const HotelConsumption = require('../models/HotelConsumption');
-const SalesEntry = require('../models/SalesEntry');
+const CustomerOrder = require('../models/CustomerOrder');
 const ExpectedConsumption = require('../models/ExpectedConsumption');
 const Hotel = require('../models/Hotel');
 const Item = require('../models/Item');
@@ -21,14 +21,14 @@ const getSummary = async (req, res) => {
       { $match: { createdAt: { $gte: startOfMonth, $lte: endOfMonth } } },
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const totalProcurementThisMonth = procurementResult.length > 0 ? procurementResult[0].total : 0;
+    const totalProcurementThisMonth = procurementResult[0]?.total || 0;
 
     // Total payments this month (paid orders)
     const paymentsResult = await ProcurementOrder.aggregate([
       { $match: { paidAt: { $gte: startOfMonth, $lte: endOfMonth }, status: 'paid' } },
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const totalPaymentsThisMonth = paymentsResult.length > 0 ? paymentsResult[0].total : 0;
+    const totalPaymentsThisMonth = paymentsResult[0]?.total || 0;
 
     // Total pending amount (all orders - paid orders)
     const allOrdersResult = await ProcurementOrder.aggregate([
@@ -38,8 +38,8 @@ const getSummary = async (req, res) => {
       { $match: { status: 'paid' } },
       { $group: { _id: null, total: { $sum: '$finalAmount' } } }
     ]);
-    const totalOrders = allOrdersResult.length > 0 ? allOrdersResult[0].total : 0;
-    const totalPaid = paidOrdersResult.length > 0 ? paidOrdersResult[0].total : 0;
+    const totalOrders = allOrdersResult[0]?.total || 0;
+    const totalPaid = paidOrdersResult[0]?.total || 0;
     const totalPendingAmount = totalOrders - totalPaid;
 
     // Total leakage percentage ((issued - consumed) / issued) * 100
@@ -80,7 +80,7 @@ const getSummary = async (req, res) => {
       totalPendingAmount,
       totalLeakagePercentage: parseFloat(totalLeakagePercentage),
       totalWastagePercentage: parseFloat(totalWastagePercentage),
-      totalSalesThisMonth,
+      totalOrdersThisMonth,
       activeAlerts: await LeakageAlert.countDocuments({ status: 'active' })
     });
   } catch (error) {
@@ -380,20 +380,20 @@ const getInsights = async (req, res) => {
       insights.push(`High pending payments amounting to ₹${pending}. Review payment schedules.`);
     }
 
-    // Insight 3: Low sales vs consumption
-    const salesResult = await SalesEntry.aggregate([
+    // Insight 3: Low orders vs consumption
+    const ordersResult = await CustomerOrder.aggregate([
       ...(from && to ? [{ $match: { date: dateMatch } }] : []),
-      { $group: { _id: null, total: { $sum: '$totalSalesAmount' } } }
+      { $group: { _id: null, total: { $sum: { $size: '$orders' } } } }
     ]);
-    const totalSales = salesResult.length > 0 ? salesResult[0].total : 0;
+    const totalOrderCount = ordersResult.length > 0 ? ordersResult[0].total : 0;
     const consumedResult = await HotelConsumption.aggregate([
       ...(from && to ? [{ $match: { date: dateMatch } }] : []),
       { $unwind: '$items' },
       { $group: { _id: null, total: { $sum: '$items.quantityConsumed' } } }
     ]);
     const totalConsumed = consumedResult.length > 0 ? consumedResult[0].total : 0;
-    if (totalConsumed > totalSales * 1.5) {
-      insights.push(`Consumption significantly higher than sales. Possible wastage or unrecorded sales.`);
+    if (totalConsumed > totalOrderCount * 1.5) {
+      insights.push(`Consumption significantly higher than orders. Possible wastage or unrecorded orders.`);
     }
 
     // Insight 4: Top performing hotels

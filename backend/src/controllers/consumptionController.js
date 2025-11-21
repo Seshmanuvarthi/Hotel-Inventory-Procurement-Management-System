@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const HotelConsumption = require('../models/HotelConsumption');
 const StockIssue = require('../models/StockIssue');
 const User = require('../models/User');
+const SalesEntry = require('../models/SalesEntry');
+const Recipe = require('../models/Recipe');
+const Item = require('../models/Item');
 const { toBaseUnit } = require('../utils/unitConverter');
 
 // POST /consumption - Create consumption entry
