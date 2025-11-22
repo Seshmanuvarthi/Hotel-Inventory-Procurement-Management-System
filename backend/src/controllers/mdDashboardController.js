@@ -7,6 +7,7 @@ const ExpectedConsumption = require('../models/ExpectedConsumption');
 const Hotel = require('../models/Hotel');
 const Item = require('../models/Item');
 const LeakageAlert = require('../models/LeakageAlert');
+const SalesEntry = require('../models/SalesEntry');
 const mongoose = require('mongoose');
 
 // GET /md-dashboard/summary
@@ -80,7 +81,7 @@ const getSummary = async (req, res) => {
       totalPendingAmount,
       totalLeakagePercentage: parseFloat(totalLeakagePercentage),
       totalWastagePercentage: parseFloat(totalWastagePercentage),
-      totalOrdersThisMonth,
+      totalSalesThisMonth,
       activeAlerts: await LeakageAlert.countDocuments({ status: 'active' })
     });
   } catch (error) {
