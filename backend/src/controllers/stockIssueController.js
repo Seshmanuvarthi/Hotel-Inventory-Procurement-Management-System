@@ -48,6 +48,7 @@ const createStockIssue = async (req, res) => {
 
       processedItems.push({
         itemId: item.itemId,
+        itemName: stock.itemId.name,
         quantityIssued: item.quantityIssued,
         unit: stock.itemId.unit,
         previousStockAfterIssue: stock.quantityOnHand
@@ -62,7 +63,8 @@ const createStockIssue = async (req, res) => {
       issuedBy,
       approvedBy,
       remarks,
-      issueNumber
+      issueNumber,
+      dateIssued: new Date() // Explicitly set dateIssued to ensure it's always valid
     });
 
     await stockIssue.save();

@@ -46,6 +46,10 @@ import VendorLedger from './pages/VendorLedger';
 import PaymentSummary from './pages/PaymentSummary';
 import MDAnalyticsDashboard from './pages/MDAnalyticsDashboard';
 import BillsListPage from './pages/BillsListPage';
+import CreateOutwardMaterialRequest from './pages/CreateOutwardMaterialRequest';
+import OutwardMaterialRequestsList from './pages/OutwardMaterialRequestsList';
+import InwardStockLogsPage from './pages/InwardStockLogsPage';
+import OutwardStockLogsPage from './pages/OutwardStockLogsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -255,6 +259,46 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['hotel_manager']}>
               <HotelDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-outward-material-request"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'md']}>
+              <CreateOutwardMaterialRequest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/outward-material-requests"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'md', 'hotel_manager']}>
+              <OutwardMaterialRequestsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/outward-material-request/:id"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'md', 'hotel_manager']}>
+              <OutwardMaterialRequestsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inward-stock-logs"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'superadmin', 'md']}>
+              <InwardStockLogsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/outward-stock-logs"
+          element={
+            <ProtectedRoute allowedRoles={['store_manager', 'superadmin', 'md']}>
+              <OutwardStockLogsPage />
             </ProtectedRoute>
           }
         />

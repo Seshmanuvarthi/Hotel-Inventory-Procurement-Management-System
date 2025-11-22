@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendPasswordResetEmail = async (email, resetToken) => {
-  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL || 'https://hotel-inventory-procurement-management-sr7u.onrender.com'}/reset-password/${resetToken}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,

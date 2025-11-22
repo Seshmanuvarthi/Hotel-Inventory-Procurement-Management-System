@@ -1,5 +1,10 @@
 const CentralStoreStock = require('../models/CentralStoreStock');
 const Item = require('../models/Item');
+const StockIssue = require('../models/StockIssue');
+const ProcurementOrder = require('../models/ProcurementOrder');
+const Vendor = require('../models/Vendor');
+const User = require('../models/User');
+const Hotel = require('../models/Hotel');
 
 // Get all store stock
 const getStoreStock = async (req, res) => {
@@ -81,9 +86,79 @@ const decreaseStockOnIssue = async (req, res) => {
   }
 };
 
+// Get inward stock logs (procurement orders where items have been received)
+const getInwardStockLogs = async (req, res) => {
+  try {
+    const orders = await ProcurementOrder.find({ status: 'paid' })
+      .populate('requestedBy', 'name')
+      .populate('paidBy', 'name')
+      .populate('items.itemId', 'name category unit')
+      .sort({ paidAt: -1 });
+
+    const inwardLogs = [];
+
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        if (item.receivedStatus === 'received' && item.receivedQuantity > 0) {
+          inwardLogs.push({
+            date: order.paidAt,
+            itemName: item.itemId.name,
+            quantity: item.receivedQuantity,
+            unit: item.unit,
+            vendor: order.vendorName,
+            procurementOrder: order.billNumber || order._id.toString(),
+            receivedBy: order.paidBy?.name || 'N/A',
+            remarks: ''
+          });
+        }
+      });
+    });
+
+    res.json(inwardLogs);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching inward stock logs', error: error.message });
+  }
+};
+
+// Get outward stock logs (stock issues to hotels)
+const getOutwardStockLogs = async (req, res) => {
+  try {
+    const logs = await StockIssue.find()
+      .populate('hotelId', 'name')
+      .populate('issuedBy', 'name')
+      .populate('approvedBy', 'name')
+      .populate('items.itemId', 'name category unit')
+      .sort({ dateIssued: -1 });
+
+    const outwardLogs = logs.map(issue => ({
+      issueId: issue._id,
+      issueNumber: issue.issueNumber,
+      hotelName: issue.hotelId?.name,
+      issuedBy: issue.issuedBy?.name,
+      approvedBy: issue.approvedBy?.name,
+      dateIssued: issue.dateIssued,
+      remarks: issue.remarks,
+      items: issue.items.map(item => ({
+        itemId: item.itemId._id,
+        itemName: item.itemId.name,
+        category: item.itemId.category,
+        unit: item.unit,
+        quantityIssued: item.quantityIssued,
+        previousStockAfterIssue: item.previousStockAfterIssue
+      }))
+    }));
+
+    res.json(outwardLogs);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching outward stock logs', error: error.message });
+  }
+};
+
 module.exports = {
   getStoreStock,
   initializeStockForNewItem,
   increaseStockOnProcurement,
-  decreaseStockOnIssue
+  decreaseStockOnIssue,
+  getInwardStockLogs,
+  getOutwardStockLogs
 };

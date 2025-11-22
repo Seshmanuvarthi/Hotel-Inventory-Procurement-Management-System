@@ -19,6 +19,7 @@ const consumptionRoutes = require('./routes/consumptionRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const reportsRoutes = require('./routes/reportsRoutes');
 const leakageAlertRoutes = require('./routes/leakageAlertRoutes');
+const outwardMaterialRoutes = require('./routes/outwardMaterialRoutes');
 
 // Initialize Cloudinary configuration
 const cloudinary = require('cloudinary').v2;
@@ -74,6 +75,7 @@ app.use('/store', stockIssueRoutes);
 app.use('/procurement', procurementRoutes);
 app.use('/procurement-orders', procurementOrderRoutes);
 app.use('/restaurant-stock-requests', restaurantStockRequestRoutes);
+app.use('/outward-material-requests', outwardMaterialRoutes);
 app.use('/payments', paymentsRoutes);
 app.use('/md-dashboard', mdDashboardRoutes);
 app.use('/consumption', consumptionRoutes);

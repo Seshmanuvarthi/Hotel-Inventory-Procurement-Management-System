@@ -166,6 +166,25 @@ const AddItemPage = () => {
                 </select>
               </div>
 
+              {formData.category === 'Bar' && (
+                <div>
+                  <label htmlFor="bottleSize" className="block text-sm font-medium text-text-dark mb-2">
+                    Bottle Size (ml) *
+                  </label>
+                  <input
+                    id="bottleSize"
+                    name="bottleSize"
+                    type="number"
+                    step="1"
+                    required
+                    className="w-full px-4 py-3 border border-secondary/20 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary bg-background text-text-dark"
+                    placeholder="Enter bottle size in ml"
+                    value={formData.bottleSize}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
+
               <div className="flex items-center">
                 <input
                   id="gstApplicable"

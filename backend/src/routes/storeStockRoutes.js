@@ -3,7 +3,9 @@ const router = express.Router();
 const {
   getStoreStock,
   increaseStockOnProcurement,
-  decreaseStockOnIssue
+  decreaseStockOnIssue,
+  getInwardStockLogs,
+  getOutwardStockLogs
 } = require('../controllers/storeStockController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
@@ -16,5 +18,11 @@ router.patch('/stock/add-on-procurement', authMiddleware, roleMiddleware(['procu
 
 // Decrease stock on issue - accessible to store_manager, superadmin, md
 router.patch('/stock/issue-to-hotel', authMiddleware, roleMiddleware(['store_manager', 'superadmin', 'md']), decreaseStockOnIssue);
+
+// Get inward stock logs - accessible to store_manager, superadmin, md
+router.get('/inward-logs', authMiddleware, roleMiddleware(['store_manager', 'superadmin', 'md']), getInwardStockLogs);
+
+// Get outward stock logs - accessible to store_manager, superadmin, md
+router.get('/outward-logs', authMiddleware, roleMiddleware(['store_manager', 'superadmin', 'md']), getOutwardStockLogs);
 
 module.exports = router;

@@ -180,7 +180,7 @@ const IssueLogPage = () => {
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="font-medium text-text-dark">
-                              {item.itemId?.name || 'Unknown Item'}
+                              {item.itemName || item.itemId?.name || 'Unknown Item'}
                             </p>
                             <p className="text-sm text-accent">
                               Quantity Issued: {item.quantityIssued} {item.unit}

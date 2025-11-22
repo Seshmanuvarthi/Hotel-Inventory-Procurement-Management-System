@@ -10,7 +10,6 @@ import {
   BarChart3,
   ChefHat,
   Receipt,
-  TrendingUp,
   Menu,
   X,
   ShoppingBag
@@ -42,6 +41,7 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: FileText, label: 'My Requests', path: '/restaurant-stock-requests' },
       { icon: ChefHat, label: 'Consumption Entry', path: '/consumption-entry' },
       { icon: Receipt, label: 'Order Entry', path: '/order-entry' },
+      { icon: ShoppingBag, label: 'Outward Requests', path: '/outward-material-requests' },
     ],
     store_manager: [
       { icon: Home, label: 'Dashboard', path: '/store-dashboard' },
@@ -50,6 +50,8 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: FileText, label: 'Issue Logs', path: '/issue-log' },
       { icon: Receipt, label: 'Upload Bill', path: '/upload-bill-list' },
       { icon: ShoppingCart, label: 'Restaurant Requests', path: '/pending-restaurant-stock-requests' },
+      { icon: BarChart3, label: 'Inward Logs', path: '/inward-stock-logs' },
+      { icon: BarChart3, label: 'Outward Logs', path: '/outward-stock-logs' },
     ],
     accounts: [
       { icon: Home, label: 'Dashboard', path: '/accounts-dashboard' },

@@ -271,6 +271,11 @@ const uploadBill = async (req, res) => {
     order.calculatedSubtotal = calculatedSubtotal;
     order.calculatedGstTotal = calculatedGstTotal;
 
+    // Update final amounts based on received quantities
+    order.finalAmount = calculatedSubtotal + calculatedGstTotal;
+    order.subtotal = calculatedSubtotal;
+    order.gstTotal = calculatedGstTotal;
+
     // Upload image to Cloudinary if provided
     let billImageUrl = null;
     if (req.file) {
@@ -301,9 +306,9 @@ const uploadBill = async (req, res) => {
 
     await order.save();
 
-    // Update central store stock for received items
+    // Update central store stock for received and partial items
     for (const item of order.items) {
-      if (item.mdApprovalStatus === 'approved' && item.receivedStatus === 'received') {
+      if (item.mdApprovalStatus === 'approved' && (item.receivedStatus === 'received' || item.receivedStatus === 'partial')) {
         let stock = await CentralStoreStock.findOne({ itemId: item.itemId });
 
         if (!stock) {
@@ -327,7 +332,7 @@ const uploadBill = async (req, res) => {
     }
 
     res.json({
-      message: 'Bill uploaded successfully and stock updated for received items',
+      message: 'Bill uploaded successfully and stock updated for received and partial items',
       order
     });
   } catch (error) {
