@@ -64,9 +64,24 @@ const ProcurementRequestDetail = () => {
             >
               Back to Bills
             </button>
+        </div>
+
+        {/* Bill Amount Summary */}
+        <div className="bg-white shadow rounded-lg p-6 mt-6 max-w-sm mx-auto">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Bill Summary</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+            <span className="font-semibold">Subtotal:</span>
+            <span>₹{request.subtotal?.toFixed(2) || '0.00'}</span>
+
+            <span className="font-semibold">GST Total:</span>
+            <span>₹{request.gstTotal?.toFixed(2) || '0.00'}</span>
+
+            <span className="font-semibold text-lg text-gray-900">Final Amount:</span>
+            <span className="text-lg font-semibold text-gray-900">₹{request.finalAmount?.toFixed(2) || '0.00'}</span>
           </div>
         </div>
       </div>
+    </div>
     );
   }
 
@@ -141,25 +156,27 @@ const ProcurementRequestDetail = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {request.items && request.items.length > 0 ? (
-                  request.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.itemId?.name || 'Unknown Item'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.unit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{item.pricePerUnit}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{item.totalAmount}
-                      </td>
-                    </tr>
-                  ))
+                  request.items
+                    .filter(item => item.mdApprovalStatus === 'approved')
+                    .map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {item.itemId?.name || 'Unknown Item'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.receivedQuantity && item.receivedQuantity > 0 ? item.receivedQuantity : item.quantity}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {item.unit}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          ₹{item.pricePerUnit}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          ₹{item.totalAmount}
+                        </td>
+                      </tr>
+                    ))
                 ) : (
                   <tr>
                     <td colSpan="5" className="px-6 py-4 text-center text-gray-500">

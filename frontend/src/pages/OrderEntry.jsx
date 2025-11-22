@@ -13,6 +13,7 @@ const OrderEntry = () => {
     items: [{
       dishName: '',
       quantity: '',
+      pricePerUnit: '',
       pricePerMl: '',
       amount: 0,
       unit: 'plates'
@@ -63,6 +64,7 @@ const OrderEntry = () => {
         dishName: '',
         quantity: '',
         pricePerUnit: '',
+        pricePerMl: '',
         amount: 0,
         unit: 'bottles'
       }]
@@ -83,6 +85,7 @@ const OrderEntry = () => {
       dishName: '',
       quantity: '',
       pricePerUnit: '',
+      pricePerMl: '',
       amount: 0,
       unit: 'plates'
     });
@@ -111,9 +114,14 @@ const OrderEntry = () => {
     }
 
     // Auto-calculate amount
-    if (field === 'quantity' || field === 'pricePerUnit' || field === 'unit') {
+    if (field === 'quantity' || field === 'pricePerUnit' || field === 'pricePerMl' || field === 'unit') {
       const quantity = parseFloat(item.quantity) || 0;
-      const price = parseFloat(item.pricePerUnit) || 0;
+      let price = 0;
+      if (item.unit === 'bottles' || item.unit === 'ml') {
+        price = parseFloat(item.pricePerMl) || 0;
+      } else {
+        price = parseFloat(item.pricePerUnit) || 0;
+      }
       item.amount = quantity * price;
     }
 
@@ -136,10 +144,24 @@ const OrderEntry = () => {
     }
 
     const validOrders = orders.filter(order =>
-      order.items.some(item => item.dishName && item.quantity > 0 && item.pricePerMl > 0)
+      order.items.some(item => {
+        if (!item.dishName || !(parseFloat(item.quantity) > 0)) return false;
+        if (item.unit === 'bottles' || item.unit === 'ml') {
+          return parseFloat(item.pricePerMl) > 0;
+        } else {
+          return parseFloat(item.pricePerUnit) > 0;
+        }
+      })
     ).map(order => ({
       ...order,
-      items: order.items.filter(item => item.dishName && item.quantity > 0 && item.pricePerMl > 0)
+      items: order.items.filter(item => {
+        if (!item.dishName || !(parseFloat(item.quantity) > 0)) return false;
+        if (item.unit === 'bottles' || item.unit === 'ml') {
+          return parseFloat(item.pricePerMl) > 0;
+        } else {
+          return parseFloat(item.pricePerUnit) > 0;
+        }
+      })
     }));
 
     if (validOrders.length === 0 || validOrders.every(order => order.items.length === 0)) {
@@ -151,9 +173,27 @@ const OrderEntry = () => {
     setMessage('');
 
     try {
+      // Transform validOrders to backend expected shape: map pricePerUnit to pricePerMl if unit is plates
+      const transformedOrders = validOrders.map(order => ({
+        ...order,
+        items: order.items.map(item => {
+          let pricePerMlValue = item.pricePerMl;
+          if (item.unit === 'plates') {
+            pricePerMlValue = item.pricePerUnit;
+          }
+          return {
+            dishName: item.dishName,
+            quantity: item.quantity,
+            pricePerMl: pricePerMlValue,
+            amount: item.amount,
+            unit: item.unit
+          };
+        })
+      }));
+
       const payload = {
         hotelId: user.hotelId,
-        orders: validOrders,
+        orders: transformedOrders,
         date,
         remarks
       };
@@ -278,8 +318,8 @@ const OrderEntry = () => {
                               label={`Price per ${item.unit}`}
                               type="number"
                               step="0.01"
-                              value={item.pricePerUnit}
-                              onChange={(e) => handleItemChange(orderIndex, itemIndex, 'pricePerUnit', e.target.value)}
+                              value={item.unit === 'bottles' || item.unit === 'ml' ? item.pricePerMl : item.pricePerUnit}
+                              onChange={(e) => handleItemChange(orderIndex, itemIndex, item.unit === 'bottles' || item.unit === 'ml' ? 'pricePerMl' : 'pricePerUnit', e.target.value)}
                               placeholder={`Price per ${item.unit}`}
                               required
                             />

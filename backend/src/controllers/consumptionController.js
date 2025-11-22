@@ -64,9 +64,28 @@ const createConsumption = async (req, res) => {
       });
     }
 
+    // Fetch item names for all processed items
+    const itemIds = processedItems.map(pi => pi.itemId);
+    const itemsWithName = await Item.find({ _id: { $in: itemIds } }).select('name');
+
+    // Map itemId to name for easy lookup
+    const itemIdNameMap = {};
+    itemsWithName.forEach(i => {
+      itemIdNameMap[i._id.toString()] = i.name;
+    });
+
+    // Attach item names to processed items
+    const processedItemsWithNames = processedItems.map(pi => ({
+      ...pi,
+      itemId: {
+        _id: pi.itemId,
+        name: itemIdNameMap[pi.itemId.toString()] || null
+      }
+    }));
+
     const consumption = new HotelConsumption({
       hotelId,
-      items: processedItems,
+      items: processedItemsWithNames,
       date: consumptionDate,
       reportedBy,
       remarks

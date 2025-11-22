@@ -35,13 +35,12 @@ const Sidebar = ({ userRole, collapsed, onToggle, onCloseMobile, isMobile }) => 
       { icon: ShoppingCart, label: 'Purchase Orders', path: '/procurement-orders' },
       { icon: ShoppingBag, label: 'New Orders', path: '/create-procurement-order' },
     ],
-    hotel_manager: [
+hotel_manager: [
       { icon: Home, label: 'Dashboard', path: '/hotel-dashboard' },
       { icon: Package, label: 'Stock Request', path: '/create-restaurant-stock-request' },
       { icon: FileText, label: 'My Requests', path: '/restaurant-stock-requests' },
       { icon: ChefHat, label: 'Consumption Entry', path: '/consumption-entry' },
       { icon: Receipt, label: 'Order Entry', path: '/order-entry' },
-      { icon: ShoppingBag, label: 'Outward Requests', path: '/outward-material-requests' },
     ],
     store_manager: [
       { icon: Home, label: 'Dashboard', path: '/store-dashboard' },

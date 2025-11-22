@@ -1,0 +1,80 @@
+<<<<<<<
+  const [orders, setOrders] = useState([{
+    orderId: `order-${Date.now()}`,
+    items: [{
+      dishName: '',
+      quantity: '',
+      pricePerMl: '',
+      amount: 0,
+      unit: 'plates'
+    }]
+  }]);
+=======
+  const [orders, setOrders] = useState([{
+    orderId: `order-${Date.now()}`,
+    items: [{
+      dishName: '',
+      quantity: '',
+      pricePerUnit: '',
+      pricePerMl: '',
+      amount: 0,
+      unit: 'plates'
+    }]
+  }]);
+>>>>>>>
+
+<<<<<<<
+  const addOrder = () => {
+    setOrders([...orders, {
+      orderId: `order-${Date.now() + orders.length}`,
+      items: [{
+        dishName: '',
+        quantity: '',
+        pricePerUnit: '',
+        amount: 0,
+        unit: 'bottles'
+      }]
+    }]);
+  };
+=======
+  const addOrder = () => {
+    setOrders([...orders, {
+      orderId: `order-${Date.now() + orders.length}`,
+      items: [{
+        dishName: '',
+        quantity: '',
+        pricePerUnit: '',
+        pricePerMl: '',
+        amount: 0,
+        unit: 'bottles'
+      }]
+    }]);
+  };
+>>>>>>>
+
+<<<<<<<
+  const addItem = (orderIndex) => {
+    const updatedOrders = [...orders];
+    updatedOrders[orderIndex].items.push({
+      dishName: '',
+      quantity: '',
+      pricePerUnit: '',
+      amount: 0,
+      unit: 'plates'
+    });
+    setOrders(updatedOrders);
+  };
+=======
+  const addItem = (orderIndex) => {
+    const updatedOrders = [...orders];
+    updatedOrders[orderIndex].items.push({
+      dishName: '',
+      quantity: '',
+      pricePerUnit: '',
+      pricePerMl: '',
+      amount: 0,
+      unit: 'plates'
+    });
+    setOrders(updatedOrders);
+  };
+>>>>>>>
