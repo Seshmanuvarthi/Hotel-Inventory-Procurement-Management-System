@@ -1,0 +1,5 @@
+- [x] Replace text input with dropdown select for vendors in VendorLedger.jsx
+- [x] Implement auto-fetch on vendor selection
+- [x] Remove Enter key press handler
+- [x] Update button disabled logic
+- [x] Test the vendor ledger page functionality

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import StyledForm from '../components/StyledForm';
 import StyledTable from '../components/StyledTable';
@@ -7,15 +7,28 @@ import axiosInstance from '../utils/axiosInstance';
 
 const VendorLedger = () => {
   const [vendorName, setVendorName] = useState('');
+  const [vendors, setVendors] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [loading, setLoading] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const handleSearch = async () => {
-    if (!vendorName) return;
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const response = await axiosInstance.get('/vendors');
+        setVendors(response.data);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+      }
+    };
+    fetchVendors();
+  }, []);
+
+  const fetchLedger = async (name) => {
+    if (!name) return;
     setLoading(true);
     try {
-      const response = await axiosInstance.get(`/payments/vendor/${vendorName}`);
+      const response = await axiosInstance.get(`/payments/vendor/${name}`);
       setLedger(response.data);
     } catch (error) {
       console.error('Error fetching vendor ledger:', error);
@@ -24,14 +37,14 @@ const VendorLedger = () => {
     setLoading(false);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  const handleVendorChange = (e) => {
+    const selectedVendor = e.target.value;
+    setVendorName(selectedVendor);
+    fetchLedger(selectedVendor);
   };
 
   return (
-    <Layout title="Vendor Ledger" userRole={user.role}>
+    <Layout title="Vendor Ledger" userRole={user?.role}>
       <div className="space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-text-dark mb-2">Vendor Ledger</h2>
@@ -42,21 +55,20 @@ const VendorLedger = () => {
           <div className="bg-card rounded-xl shadow-luxury p-6 border border-secondary/10 mb-6">
             <div className="flex gap-4">
               <div className="flex-1">
-                <StyledForm.Input
-                  label="Vendor Name"
-                  type="text"
+                <StyledForm.Select
+                  label="Select Vendor"
                   value={vendorName}
-                  onChange={(e) => setVendorName(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter vendor name to search"
+                  onChange={handleVendorChange}
+                  options={vendors.map(vendor => ({ value: vendor.name, label: vendor.name }))}
+                  placeholder="Select a vendor"
                 />
               </div>
               <div className="flex items-end">
                 <PrimaryButton
-                  onClick={handleSearch}
-                  disabled={loading || !vendorName.trim()}
+                  onClick={() => fetchLedger(vendorName)}
+                  disabled={loading || !vendorName}
                 >
-                  {loading ? 'Searching...' : 'Search'}
+                  {loading ? 'Loading...' : 'View Ledger'}
                 </PrimaryButton>
               </div>
             </div>
@@ -100,7 +112,7 @@ const VendorLedger = () => {
 
           {ledger.length === 0 && vendorName && !loading && (
             <div className="bg-card rounded-xl shadow-luxury p-8 border border-secondary/10 text-center">
-              <p className="text-accent">No ledger data found for this vendor.</p>
+              <p className="text-accent">No ledger data found for the selected vendor.</p>
             </div>
           )}
         </div>
@@ -109,7 +121,7 @@ const VendorLedger = () => {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-text-dark mb-2">Vendor Ledger Guidelines</h3>
             <p className="text-sm text-accent">
-              Search for vendors by name to view their complete payment history and outstanding balances.
+              Select a vendor from the dropdown to view their complete payment history and outstanding balances.
               Use this information for financial planning and vendor relationship management.
               All payment records are maintained for audit and compliance purposes.
             </p>

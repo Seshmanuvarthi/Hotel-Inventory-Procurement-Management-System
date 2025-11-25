@@ -10,7 +10,7 @@ const HotelDashboard = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   return (
-    <Layout title="Hotel Manager Dashboard" userRole={user.role}>
+    <Layout title="Hotel Manager Dashboard" userRole={user?.role}>
       <div className="space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-text-dark mb-2">Hotel Operations</h2>
@@ -72,18 +72,18 @@ const HotelDashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <DashboardCard
-            title="Daily Sales"
+            title="Daily Orders"
             value="Revenue Tracking"
             icon={TrendingUp}
             color="primary"
-            subtitle="Record daily sales and revenue"
+            subtitle="Record daily orders and revenue"
           >
             <div className="mt-4">
               <SecondaryButton
-                onClick={() => navigate('/sales-entry')}
+                onClick={() => navigate('/order-entry')}
                 className="w-full"
               >
-                Enter Sales
+                Enter Orders
               </SecondaryButton>
             </div>
           </DashboardCard>
@@ -117,7 +117,7 @@ const HotelDashboard = () => {
               <span className="text-sm font-medium text-text-dark">Consumption</span>
             </button>
             <button
-              onClick={() => navigate('/sales-entry')}
+              onClick={() => navigate('/order-entry')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >
               <TrendingUp className="w-8 h-8 text-secondary mx-auto mb-2 group-hover:animate-bounce-subtle" />
@@ -130,7 +130,7 @@ const HotelDashboard = () => {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-text-dark mb-2">Daily Operations Reminder</h3>
             <p className="text-sm text-accent">
-              Remember to enter consumption and sales data daily before 6 PM.
+              Remember to enter consumption and order data daily before 6 PM.
               Accurate data entry ensures precise inventory management and reporting.
             </p>
           </div>

@@ -29,35 +29,39 @@ const MDAnalyticsDashboard = () => {
   const [itemConsumptionTrend, setItemConsumptionTrend] = useState([]);
   const [expectedVsActualTopItems, setExpectedVsActualTopItems] = useState([]);
   const [vendorPerformance, setVendorPerformance] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [vendorName, setVendorName] = useState('');
+  const [ledger, setLedger] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [selectedItem, setSelectedItem] = useState('');
+  const [items, setItems] = useState([]);
   const [year, setYear] = useState(new Date().getFullYear().toString());
 
   // USECALLBACK TO FIX ESLINT WARNING
   const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
-      const [
-        summaryRes, leakageRes, hotelLeakageRes, procurementRes,
-        expectedVsActualRes, vendorRes
-      ] = await Promise.all([
-        axiosInstance.get('/md-dashboard/summary'),
-        axiosInstance.get('/md-dashboard/leakage-chart'),
-        axiosInstance.get('/md-dashboard/hotel-leakage'),
-        axiosInstance.get(`/md-dashboard/procurement-vs-payments?year=${year}`),
-        axiosInstance.get('/md-dashboard/expected-vs-actual-top-items'),
-        axiosInstance.get('/md-dashboard/vendor-performance'),
-      ]);
+  const [
+    summaryRes, leakageRes, hotelLeakageRes, procurementRes,
+    expectedVsActualRes, vendorPerformanceRes
+  ] = await Promise.all([
+    axiosInstance.get('/md-dashboard/summary'),
+    axiosInstance.get('/md-dashboard/leakage-chart'),
+    axiosInstance.get('/md-dashboard/hotel-leakage'),
+    axiosInstance.get(`/md-dashboard/procurement-vs-payments?year=${year}`),
+    axiosInstance.get('/md-dashboard/expected-vs-actual-top-items'),
+    axiosInstance.get('/md-dashboard/vendor-performance'),
+  ]);
 
-      setSummary(summaryRes.data);
-      setLeakageChart(leakageRes.data || []);
-      setHotelLeakage(hotelLeakageRes.data || []);
-      setProcurementVsPayments(procurementRes.data || []);
-      setExpectedVsActualTopItems(expectedVsActualRes.data || []);
-      setVendorPerformance(vendorRes.data || []);
+  setSummary(summaryRes.data);
+  setLeakageChart(leakageRes.data || []);
+  setHotelLeakage(hotelLeakageRes.data || []);
+  setProcurementVsPayments(procurementRes.data || []);
+  setExpectedVsActualTopItems(expectedVsActualRes.data || []);
+  setVendorPerformance(vendorPerformanceRes.data || []);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -70,24 +74,52 @@ const MDAnalyticsDashboard = () => {
     fetchAllData();
   }, [fetchAllData]);
 
+  // FETCH ITEMS ON LOAD
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const response = await axiosInstance.get('/items');
+        setItems(response.data);
+      } catch (error) {
+        console.error('Error fetching items:', error);
+      }
+    };
+    fetchItems();
+  }, []);
+
   const handleDateFilter = async () => {
     try {
       const [
-        leakageRes, hotelLeakageRes, expectedVsActualRes, vendorRes
+        leakageRes, hotelLeakageRes, expectedVsActualRes
       ] = await Promise.all([
         axiosInstance.get(`/md-dashboard/leakage-chart?from=${fromDate}&to=${toDate}`),
         axiosInstance.get(`/md-dashboard/hotel-leakage?from=${fromDate}&to=${toDate}`),
         axiosInstance.get(`/md-dashboard/expected-vs-actual-top-items?from=${fromDate}&to=${toDate}`),
-        axiosInstance.get(`/md-dashboard/vendor-performance?from=${fromDate}&to=${toDate}`),
       ]);
 
       setLeakageChart(leakageRes.data || []);
       setHotelLeakage(hotelLeakageRes.data || []);
       setExpectedVsActualTopItems(expectedVsActualRes.data || []);
-      setVendorPerformance(vendorRes.data || []);
     } catch (error) {
       console.error('Error applying filtered data:', error);
     }
+  };
+
+  const fetchLedger = async (name) => {
+    if (!name) return;
+    try {
+      const response = await axiosInstance.get(`/payments/vendor/${name}`);
+      setLedger(response.data);
+    } catch (error) {
+      console.error('Error fetching vendor ledger:', error);
+      setLedger([]);
+    }
+  };
+
+  const handleVendorChange = (e) => {
+    const selectedVendor = e.target.value;
+    setVendorName(selectedVendor);
+    fetchLedger(selectedVendor);
   };
 
   const handleItemTrend = async () => {
@@ -255,11 +287,11 @@ const MDAnalyticsDashboard = () => {
           <h3 className="text-xl font-semibold mb-4">Item Consumption Trend</h3>
 
           <div className="flex gap-4 mb-4">
-            <StyledForm.Input
-              type="text"
-              placeholder="Enter Item ID"
+            <StyledForm.Select
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
+              options={items.map(item => ({ value: item._id, label: item.name }))}
+              placeholder="Select an item"
               className="flex-1"
             />
             <PrimaryButton onClick={handleItemTrend}>Load Trend</PrimaryButton>

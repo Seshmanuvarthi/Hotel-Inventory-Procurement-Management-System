@@ -237,24 +237,37 @@ const getItemConsumptionTrend = async (req, res) => {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    const consumptionData = await HotelConsumption.aggregate([
-      { $match: { date: { $gte: startDate } } },
-      { $unwind: '$items' },
-      { $match: { 'items.itemId': mongoose.Types.ObjectId(itemId) } },
-      {
-        $group: {
-          _id: range === 'monthly' ? { $dateToString: { format: '%Y-%m', date: '$date' } } : { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
-          totalConsumed: { $sum: '$items.quantityConsumed' }
+    const consumptionData = await HotelConsumption.find({
+      date: { $gte: startDate },
+      'items.itemId': new mongoose.Types.ObjectId(itemId)
+    }).select('date items');
+
+    // Process data in JavaScript
+    const trendMap = new Map();
+
+    consumptionData.forEach(record => {
+      record.items.forEach(item => {
+        if (item.itemId.toString() === itemId) {
+          const date = new Date(record.date);
+          let key;
+          if (range === 'monthly') {
+            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          } else {
+            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          }
+
+          if (trendMap.has(key)) {
+            trendMap.set(key, trendMap.get(key) + item.quantityConsumed);
+          } else {
+            trendMap.set(key, item.quantityConsumed);
+          }
         }
-      },
-      { $sort: { '_id': 1 } }
-    ]);
+      });
+    });
 
-    const trend = consumptionData.map(item => ({
-      date: item._id,
-      consumption: item.totalConsumed
-    }));
-
+    const trend = Array.from(trendMap.entries())
+      .map(([date, consumption]) => ({ date, consumption }))
+      .sort((a, b) => a.date.localeCompare(b.date));
     res.json(trend);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching item consumption trend', error: error.message });

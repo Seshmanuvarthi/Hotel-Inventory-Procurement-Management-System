@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/Layout';
+import PrimaryButton from '../components/PrimaryButton';
+import SecondaryButton from '../components/SecondaryButton';
 import axiosInstance from '../utils/axiosInstance';
 
 const BillsListPage = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -37,27 +41,31 @@ const BillsListPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
+      <Layout title="Previous Orders" userRole={user.role}>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-xl text-text-dark">Loading...</div>
+        </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-6 sm:py-8 lg:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-text-dark">Previous Orders</h2>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-            <button
+    <Layout title="Previous Orders" userRole={user.role}>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-text-dark mb-2">Previous Orders</h2>
+            <p className="text-accent">View and manage processed procurement orders</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <PrimaryButton
               onClick={() => navigate('/upload-bill')}
-              className="w-full sm:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-card bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+              className="w-full sm:w-auto"
             >
               Upload New Bill
-            </button>
-            <button
+            </PrimaryButton>
+            <SecondaryButton
               onClick={() => {
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
                 if (user.role === 'superadmin') navigate('/superadmin-dashboard');
                 else if (user.role === 'procurement_officer') navigate('/procurement-dashboard');
                 else if (user.role === 'accounts') navigate('/accounts-dashboard');
@@ -66,10 +74,10 @@ const BillsListPage = () => {
                 else if (user.role === 'hotel_manager') navigate('/hotel-dashboard');
                 else navigate('/login');
               }}
-              className="w-full sm:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-card bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
+              className="w-full sm:w-auto"
             >
               Back to Dashboard
-            </button>
+            </SecondaryButton>
           </div>
         </div>
 
@@ -186,7 +194,7 @@ const BillsListPage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

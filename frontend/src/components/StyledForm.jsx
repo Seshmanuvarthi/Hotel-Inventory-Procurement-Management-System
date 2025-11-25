@@ -145,7 +145,7 @@ const StyledForm = ({ fields = [], formData, onChange }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
       {fields.map((field, index) => {
         const { type, name, ...rest } = field;
         const value = name.includes('.') ? getNestedValue(formData, name) : formData[name];

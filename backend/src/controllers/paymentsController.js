@@ -17,9 +17,36 @@ const getAllPayments = async (req, res) => {
   }
 };
 
-// Get payments by vendor (deprecated - now handled in procurementOrderController)
+// Get payments by vendor
 const getPaymentsByVendor = async (req, res) => {
-  return res.status(410).json({ message: 'This endpoint is deprecated. Vendor payments are now tracked in procurement orders.' });
+  try {
+    const { vendorName } = req.params;
+
+    const orders = await ProcurementOrder.find({ vendorName, status: 'paid' })
+      .populate('paidBy', 'name')
+      .sort({ paidAt: -1 });
+
+    const ledger = orders.map(order => ({
+      bill: {
+        _id: order._id,
+        vendorName: order.vendorName,
+        billNumber: order.billNumber,
+        finalAmount: order.finalAmount
+      },
+      payments: [{
+        amountPaid: order.finalAmount,
+        paymentMode: order.paymentMode,
+        paymentDate: order.paidAt,
+        paidBy: order.paidBy
+      }],
+      totalPaid: order.finalAmount,
+      pending: 0
+    }));
+
+    res.json(ledger);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching vendor ledger', error: error.message });
+  }
 };
 
 // Get pending payments (approved orders that are not paid)

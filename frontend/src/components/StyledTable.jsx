@@ -46,7 +46,7 @@ const StyledTable = ({ headers = [], data = [], className = '', onRowClick }) =>
                   {row.map((cell, cellIndex) => (
                     <td
                       key={cellIndex}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-text-dark"
+                      className="px-2 py-2 whitespace-nowrap text-xs text-text-dark sm:px-4 sm:py-3 sm:text-sm md:px-6 md:py-4 md:text-sm"
                     >
                       {cell}
                     </td>

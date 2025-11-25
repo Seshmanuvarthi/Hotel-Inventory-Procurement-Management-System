@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
-import { Menu } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
 
 const Layout = ({ children, title, userRole }) => {
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -50,7 +58,13 @@ const Layout = ({ children, title, userRole }) => {
               <Menu size={24} className="text-primary" />
             </button>
             <h1 className="text-lg sm:text-xl font-bold text-text-dark">{title}</h1>
-            <div className="w-10"></div> {/* Spacer for centering */}
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-lg hover:bg-secondary/10 transition-colors duration-200 text-primary"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
         </div>
 

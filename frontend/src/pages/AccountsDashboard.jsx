@@ -91,13 +91,6 @@ const AccountsDashboard = () => {
           <h3 className="text-xl font-semibold text-text-dark mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
-              onClick={() => navigate('/procurement-requests')}
-              className="p-4 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors duration-200 text-center group"
-            >
-              <Receipt className="w-8 h-8 text-primary mx-auto mb-2 group-hover:animate-bounce-subtle" />
-              <span className="text-sm font-medium text-text-dark">Procurement Requests</span>
-            </button>
-            <button
               onClick={() => navigate('/bills')}
               className="p-4 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors duration-200 text-center group"
             >

@@ -222,7 +222,7 @@ const OrderEntry = () => {
   };
 
   return (
-    <Layout title="Order Entry" userRole={user.role}>
+    <Layout title="Order Entry" userRole={user?.role}>
       <div className="space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-text-dark mb-2">Daily Order Entry</h2>

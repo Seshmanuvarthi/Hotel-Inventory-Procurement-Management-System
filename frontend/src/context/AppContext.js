@@ -4,7 +4,7 @@ const AppContext = createContext(null); // Ensure default value is null or an ob
 
 const AppProvider = ({ children }) => {
   const contextValue = {
-    user: JSON.parse(localStorage.getItem('user')) || null,
+    user: JSON.parse(localStorage.getItem('user')) || {},
   };
 
   return (
