@@ -10,33 +10,53 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendPasswordResetEmail = async (email, resetToken) => {
-  const resetUrl = `${process.env.FRONTEND_URL || 'https://hotel-inventory-procurement-management-sr7u.onrender.com'}/reset-password/${resetToken}`;
+  try {
+    console.log('Attempting to send password reset email to:', email);
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Password Reset Request - Hotel ERP',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Password Reset Request</h2>
-        <p>You requested a password reset for your Hotel ERP account.</p>
-        <p>Click the button below to reset your password:</p>
-        <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Reset Password</a>
-        <p><strong>Security Notice:</strong></p>
-        <ul>
-          <li>This link will expire in 15 minutes for your security.</li>
-          <li>The link can only be used once.</li>
-          <li>If you didn't request this reset, please ignore this email and contact your administrator.</li>
-          <li>Do not share this link with anyone.</li>
-        </ul>
-        <p>If the button doesn't work, copy and paste this URL into your browser:</p>
-        <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${resetUrl}</p>
-        <p>Best regards,<br>Hotel ERP Team</p>
-      </div>
-    `
-  };
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error('Email credentials not configured');
+    }
 
-  await transporter.sendMail(mailOptions);
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://hotel-inventory-procurement-management-sr7u.onrender.com'}/reset-password/${resetToken}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Password Reset Request - Hotel ERP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Password Reset Request</h2>
+          <p>You requested a password reset for your Hotel ERP account.</p>
+          <p>Click the button below to reset your password:</p>
+          <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;">Reset Password</a>
+          <p><strong>Security Notice:</strong></p>
+          <ul>
+            <li>This link will expire in 15 minutes for your security.</li>
+            <li>The link can only be used once.</li>
+            <li>If you didn't request this reset, please ignore this email and contact your administrator.</li>
+            <li>Do not share this link with anyone.</li>
+          </ul>
+          <p>If the button doesn't work, copy and paste this URL into your browser:</p>
+          <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 3px;">${resetUrl}</p>
+          <p>Best regards,<br>Hotel ERP Team</p>
+        </div>
+      `
+    };
+
+    // Set timeout for sendMail (30 seconds)
+    const result = await Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Email send timeout')), 30000)
+      )
+    ]);
+
+    console.log('Password reset email sent successfully to:', email);
+    return result;
+  } catch (error) {
+    console.error('Failed to send password reset email:', error.message);
+    throw error;
+  }
 };
 
 module.exports = {
