@@ -2,7 +2,9 @@ const nodemailer = require('nodemailer');
 
 // Create transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // or your email service
+  host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
@@ -20,9 +22,15 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     const resetUrl = `${process.env.FRONTEND_URL || 'https://hotel-inventory-procurement-management-sr7u.onrender.com'}/reset-password/${resetToken}`;
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_SENDER,
       to: email,
-      subject: 'Password Reset Request - Hotel ERP',
+      subject: "Password Reset Request",
+      text: `Hello,
+
+Click this link to reset your password:
+${resetUrl}
+
+If you did not request this, ignore this email.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Password Reset Request</h2>
